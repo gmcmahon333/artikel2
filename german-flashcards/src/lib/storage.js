@@ -5,7 +5,7 @@
 //
 // Every function is async so the rest of the app never has to care which is live.
 
-import { loadSeed } from "./deck.js";
+import { loadSeed, seedAdditionsFor, seedCardId } from "./deck.js";
 import { freshItem } from "./engine.js";
 import { supabase, hasSupabase } from "./supabaseClient.js";
 
@@ -14,15 +14,19 @@ const LOCAL_REVIEWS = "artikel.reviews.v1";
 const LOCAL_PARAMS = "artikel.params.v1";
 
 // Shared seed builder used by both backends.
-export function buildSeedCards(now = Date.now()) {
-  return loadSeed().map((w, i) => ({
-    id: `seed-${i}`,
+export function buildSeedCards(now = Date.now(), words = loadSeed()) {
+  return words.map((w) => ({
+    id: seedCardId(w),
     noun: w.noun,
     gender: w.gender,
     en: w.en,
     article: freshItem(now),
     meaning: freshItem(now),
   }));
+}
+
+function buildSeedAdditions(cards, now = Date.now()) {
+  return buildSeedCards(now, seedAdditionsFor(cards));
 }
 
 // ---- Supabase row <-> app card ----
@@ -62,7 +66,14 @@ export async function loadCards(userId) {
       if (insErr) throw insErr;
       return seeded;
     }
-    return data.map(rowToCard);
+    const existing = data.map(rowToCard);
+    const additions = buildSeedAdditions(existing);
+    if (additions.length) {
+      const rows = additions.map((c) => cardToRow(userId, c));
+      const { error: insErr } = await supabase.from("cards").insert(rows);
+      if (insErr) throw insErr;
+    }
+    return [...existing, ...additions];
   }
 
   // local fallback
@@ -73,7 +84,12 @@ export async function loadCards(userId) {
       localStorage.setItem(LOCAL_KEY, JSON.stringify(seeded));
       return seeded;
     }
-    return JSON.parse(raw);
+    const existing = JSON.parse(raw);
+    const additions = buildSeedAdditions(existing);
+    if (!additions.length) return existing;
+    const merged = [...existing, ...additions];
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(merged));
+    return merged;
   } catch {
     return buildSeedCards();
   }
