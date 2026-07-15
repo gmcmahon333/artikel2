@@ -7,6 +7,6 @@ drop index if exists public.cards_article_due_idx;
 drop index if exists public.cards_meaning_due_idx;
 
 create index cards_article_due_idx
-  on public.cards (((article_state ->> 'due')::timestamptz));
+  on public.cards ((article_state ->> 'due'));
 create index cards_meaning_due_idx
-  on public.cards (((meaning_state ->> 'due')::timestamptz));
+  on public.cards ((meaning_state ->> 'due'));
