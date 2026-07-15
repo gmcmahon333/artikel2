@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import GradeBar from "./GradeBar.jsx";
+import { nounImageUrl } from "../lib/nounImages.js";
 
 const ARTICLE_LABEL = { der: "der", die: "die", das: "das" };
 
@@ -13,6 +14,9 @@ export default function Flashcard({
   onGradeArticle,
   onGradeMeaning,
 }) {
+  const imageUrl = nounImageUrl(card);
+  const [imageFailed, setImageFailed] = useState(false);
+
   return (
     <div
       className="card"
@@ -25,6 +29,19 @@ export default function Flashcard({
         <p className="card__prompt">
           {revealed ? "Artikel + Bedeutung" : "Welcher Artikel? Welche Bedeutung?"}
         </p>
+
+        {imageUrl && !imageFailed && (
+          <div className="card__visual">
+            <img
+              className="card__image"
+              src={imageUrl}
+              alt=""
+              loading="eager"
+              decoding="async"
+              onError={() => setImageFailed(true)}
+            />
+          </div>
+        )}
 
         <h1 className="card__noun">
           {revealed && <span className="card__article">{ARTICLE_LABEL[card.gender]} </span>}
