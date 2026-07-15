@@ -23,8 +23,19 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache the Google Fonts so the app still looks right fully offline.
+        // Cache fonts and recently studied noun images for offline review.
         runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) =>
+              request.destination === "image" &&
+              url.pathname.includes("/storage/v1/object/public/noun-images/"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "noun-images",
+              expiration: { maxEntries: 250, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
