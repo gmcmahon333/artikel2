@@ -3,6 +3,13 @@
 // gender: "der" | "die" | "das". `noun` is the bare word; the article is the
 // thing you're being tested on, so it's never shown on the front.
 
+// Seed batches are versioned so an existing user's deck can receive newly
+// shipped nouns without rebuilding any cards (and therefore without losing
+// review progress). The first 68 entries are the original deck; the remaining
+// entries were introduced in the second batch.
+export const CURRENT_DECK_VERSION = 2;
+const ORIGINAL_SEED_SIZE = 68;
+
 export const SEED = [
   { noun: "Mann", gender: "der", plural: "Männer", nominative: "der Mann", genitive: "des Mannes", dative: "dem Mann", accusative: "den Mann", en: "man" },
   { noun: "Frau", gender: "die", plural: "Frauen", nominative: "die Frau", genitive: "der Frau", dative: "der Frau", accusative: "die Frau", en: "woman" },
@@ -179,11 +186,38 @@ export const SEED = [
 export function loadSeed() {
   const seen = new Set();
   const out = [];
-  for (const w of SEED) {
+  for (const [index, w] of SEED.entries()) {
     const key = `${w.noun}::${w.en}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(w);
+    out.push({ ...w, seedVersion: index < ORIGINAL_SEED_SIZE ? 1 : 2 });
   }
   return out;
+}
+
+// IDs are independent of array order, so inserting or rearranging nouns cannot
+// attach one noun to another noun's saved scheduling state.
+export function seedCardId(word) {
+  return `seed-v${word.seedVersion}-${encodeURIComponent(`${word.noun}::${word.en}`)}`;
+}
+
+// Return complete, not-yet-installed seed batches. A batch marker is carried
+// by its card IDs, so this works in both localStorage and Supabase without a
+// separate schema migration. Once installed, deleting an individual seed card
+// does not make it reappear on the next load.
+export function seedAdditionsFor(cards) {
+  const installedVersions = new Set();
+  const existingWords = new Set(cards.map((card) => `${card.noun}::${card.en}`));
+
+  for (const card of cards) {
+    const match = /^seed-v(\d+)-/.exec(card.id);
+    if (match) installedVersions.add(Number(match[1]));
+  }
+
+  return loadSeed().filter(
+    (word) =>
+      word.seedVersion > 1 &&
+      !installedVersions.has(word.seedVersion) &&
+      !existingWords.has(`${word.noun}::${word.en}`)
+  );
 }
