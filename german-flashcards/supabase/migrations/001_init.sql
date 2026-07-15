@@ -1,5 +1,5 @@
 -- 001_init.sql — review state for the article trainer.
--- Each row is one card; its two SM-2 items live in jsonb columns so the
+-- Each row is one card; its two FSRS items live in jsonb columns so the
 -- scheduler stays in app code and the schema never has to change.
 
 create extension if not exists "pgcrypto";
@@ -16,11 +16,11 @@ create table if not exists public.cards (
   primary key (user_id, id)
 );
 
--- Fast "what's due" lookups. (due is epoch ms inside the jsonb.)
+-- Fast "what's due" lookups. ts-fsrs serializes due as an ISO timestamp.
 create index if not exists cards_article_due_idx
-  on public.cards (((article_state ->> 'due')::bigint));
+  on public.cards (((article_state ->> 'due')::timestamptz));
 create index if not exists cards_meaning_due_idx
-  on public.cards (((meaning_state ->> 'due')::bigint));
+  on public.cards (((meaning_state ->> 'due')::timestamptz));
 
 -- Row-level security: a user only ever sees their own cards.
 alter table public.cards enable row level security;
