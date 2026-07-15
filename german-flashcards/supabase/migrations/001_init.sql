@@ -18,9 +18,9 @@ create table if not exists public.cards (
 
 -- Fast "what's due" lookups. ts-fsrs serializes due as an ISO timestamp.
 create index if not exists cards_article_due_idx
-  on public.cards (((article_state ->> 'due')::timestamptz));
+  on public.cards ((article_state ->> 'due'));
 create index if not exists cards_meaning_due_idx
-  on public.cards (((meaning_state ->> 'due')::timestamptz));
+  on public.cards ((meaning_state ->> 'due'));
 
 -- Row-level security: a user only ever sees their own cards.
 alter table public.cards enable row level security;

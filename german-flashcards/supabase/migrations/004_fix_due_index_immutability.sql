@@ -1,7 +1,8 @@
--- 003_fix_due_indexes.sql — ts-fsrs stores card due dates as ISO timestamps.
+-- 004_fix_due_index_immutability.sql
 --
--- The original indexes cast those values to bigint, causing inserts to fail
--- with "invalid input syntax for type bigint" as soon as Supabase was enabled.
+-- Casting text to timestamptz is not immutable in PostgreSQL, so it cannot be
+-- used in an index expression. ts-fsrs emits canonical UTC ISO strings, which
+-- preserve chronological order when indexed directly as text.
 
 drop index if exists public.cards_article_due_idx;
 drop index if exists public.cards_meaning_due_idx;
