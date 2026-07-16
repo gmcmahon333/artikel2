@@ -9,10 +9,10 @@ import {
   verifiedExamplesForNoun,
 } from "./caseExamples.js";
 
-test("case example pilot covers twenty nouns in all three practiced cases", () => {
+test("case example library covers every noun with two examples per practiced case", () => {
   const nounIds = new Set(CASE_EXAMPLES.map((example) => example.nounId));
-  assert.equal(nounIds.size, 20);
-  assert.equal(CASE_EXAMPLES.length, 61);
+  assert.equal(nounIds.size, 1168);
+  assert.equal(CASE_EXAMPLES.length, 7009);
 
   for (const nounId of nounIds) {
     assert.deepEqual(
@@ -24,7 +24,7 @@ test("case example pilot covers twenty nouns in all three practiced cases", () =
   const zeitId = CASE_EXAMPLES.find((example) => example.noun === "Zeit").nounId;
   assert.equal(
     examplesForNoun(zeitId).filter((example) => example.grammaticalCase === "nominative").length,
-    2
+    3
   );
 });
 
@@ -61,7 +61,7 @@ test("validator rejects missing case coverage without relying on pilot totals", 
   const incomplete = CASE_EXAMPLES.filter(
     (example) => !(example.nounId === nounId && example.grammaticalCase === "dative")
   );
-  assert.ok(validateCaseExamples(incomplete).some((error) => /needs 1 dative example/.test(error)));
+  assert.ok(validateCaseExamples(incomplete).some((error) => /needs 2 dative example/.test(error)));
 });
 
 test("optional editorial validation can require reviewed examples", () => {

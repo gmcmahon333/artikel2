@@ -12,4 +12,5 @@ test("governed-rule candidates cover fixed dative, accusative, and nominative pa
   assert.ok(GOVERNED_EXAMPLES.some((example) => example.ruleType === "preposition"));
   assert.ok(GOVERNED_EXAMPLES.some((example) => example.ruleType === "copula"));
   assert.ok(GOVERNED_EXAMPLES.every((example) => example.sentence === `${example.before}${example.target}${example.after}`));
+  assert.ok(GOVERNED_EXAMPLES.every((example) => example.ruleId));
 });

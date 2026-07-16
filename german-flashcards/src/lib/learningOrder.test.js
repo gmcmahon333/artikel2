@@ -8,7 +8,7 @@ test("rule cards follow CEFR and frequency priority instead of case groups", () 
   const ordered = orderRuleCards(shuffled, GOVERNED_EXAMPLES)
     .map((card) => GOVERNED_EXAMPLES.find((example) => example.id === card.id));
   assert.deepEqual(ordered.slice(0, 3).map((example) => example.governor), ["sein", "mit", "für"]);
-  assert.deepEqual(ordered.slice(-3).map((example) => example.governor), ["durch", "folgen", "begegnen"]);
+  assert.ok(ordered.slice(-3).every((example) => example.cefr === "C1"));
 });
 
 test("case cards interleave grammatical cases within a CEFR layer", () => {

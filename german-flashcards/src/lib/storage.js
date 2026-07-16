@@ -141,16 +141,20 @@ function loadLocalCaseCards(seeded) {
       meaningSchedule: card.meaningSchedule || card.schedule,
     })) : [];
     const existingIds = new Set(existing.map((card) => card.id));
-    const merged = [...existing, ...seeded.filter((card) => !existingIds.has(card.id))];
-    localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(merged));
-    return merged;
+    return [...existing, ...seeded.filter((card) => !existingIds.has(card.id))];
   } catch {
     return seeded;
   }
 }
 
 function saveLocalCaseCards(cards) {
-  localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(cards));
+  // Fresh cards are deterministic virtual records. Persist only cards whose
+  // schedule has actually changed, keeping a 7k+ content library lightweight.
+  const reviewed = cards.filter((card) =>
+    (card.schedule?.reps || 0) > 0 ||
+    (card.meaningSchedule?.reps || 0) > 0
+  );
+  localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(reviewed));
 }
 
 export async function loadCaseCards(userId) {
@@ -164,12 +168,8 @@ export async function loadCaseCards(userId) {
     const existing = (data || []).map(caseRowToCard);
     const existingIds = new Set(existing.map((card) => card.id));
     const additions = seeded.filter((card) => !existingIds.has(card.id));
-    if (additions.length) {
-      const { error: insertError } = await supabase.from("case_cards").insert(
-        additions.map((card) => caseCardToRow(userId, card))
-      );
-      if (insertError) throw insertError;
-    }
+    // Missing cards stay virtual until their first review. saveCaseCard uses an
+    // upsert, so existing users receive new content without a bulk login write.
     return [...existing, ...additions];
   }
   return loadLocalCaseCards(seeded);

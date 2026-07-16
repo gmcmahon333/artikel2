@@ -138,7 +138,7 @@ function authoringRecords(raw) {
   return raw;
 }
 
-export const CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType, cases]) => {
+const CORE_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType, cases]) => {
   const word = seedByKey.get(`${noun}::${en}`);
   if (!word) throw new Error(`Case example references unknown noun: ${noun}::${en}`);
 
@@ -173,6 +173,102 @@ export const CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType, cases]) => 
   });
 });
 
+const SUPPLEMENTAL_FRAMES = {
+  nominative: {
+    before: "Heute steht ", after: " im Mittelpunkt.",
+    translation: (gloss) => `Today, the ${gloss} is the focus.`, trigger: "subject",
+  },
+  dative: {
+    before: "Wir beschäftigen uns mit ", after: ".",
+    translation: (gloss) => `We are dealing with the ${gloss}.`, trigger: "mit + dative",
+  },
+  accusative: {
+    before: "Wir sprechen über ", after: ".",
+    translation: (gloss) => `We are talking about the ${gloss}.`, trigger: "über + accusative",
+  },
+};
+
+const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
+  const word = seedByKey.get(`${noun}::${en}`);
+  const gloss = en.split(" / ")[0];
+  return PRACTICED_CASES.map((grammaticalCase) => {
+    const frame = SUPPLEMENTAL_FRAMES[grammaticalCase];
+    const target = word[grammaticalCase];
+    return {
+      id: `${seedCardId(word)}-${{ nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase]}-supplement-01`,
+      version: CASE_EXAMPLE_VERSION,
+      nounId: seedCardId(word), noun, grammaticalCase,
+      forms: Object.fromEntries(PRACTICED_CASES.map((caseName) => [caseName, word[caseName]])),
+      number: "singular", determiner: "definite", semanticType,
+      before: frame.before, target, after: frame.after,
+      sentence: `${frame.before}${target}${frame.after}`,
+      translation: frame.translation(gloss), trigger: frame.trigger,
+      cefr: word.cefr, frequencyRank: word.frequencyRank,
+      status: "candidate", reviewer: null, reviewedAt: null, reviewNotes: null,
+    };
+  });
+});
+
+// Two deliberately neutral candidate frames per case make every noun in the
+// article deck immediately available for case practice.  The hand-authored
+// pilot remains intact, including its stable IDs; generated records are only
+// used for nouns outside that pilot.
+const GENERATED_FRAMES = {
+  nominative: [
+    { key: "generated-01", before: "Hier ist ", after: ".", translation: (gloss) => `Here is the ${gloss}.`, trigger: "subject" },
+    { key: "generated-02", before: "Dort steht ", after: " im Mittelpunkt.", translation: (gloss) => `There, the ${gloss} is the focus.`, trigger: "subject" },
+  ],
+  dative: [
+    { key: "generated-01", before: "Mit ", after: " gibt es ein Problem.", translation: (gloss) => `There is a problem with the ${gloss}.`, trigger: "mit + dative" },
+    { key: "generated-02", before: "Wir beschäftigen uns mit ", after: ".", translation: (gloss) => `We are dealing with the ${gloss}.`, trigger: "mit + dative" },
+  ],
+  accusative: [
+    { key: "generated-01", before: "Wir betrachten ", after: ".", translation: (gloss) => `We are looking at the ${gloss}.`, trigger: "direct object" },
+    { key: "generated-02", before: "Wir untersuchen ", after: ".", translation: (gloss) => `We are examining the ${gloss}.`, trigger: "direct object" },
+  ],
+};
+
+const pilotNounIds = new Set(PILOT.map(([noun, en]) => seedCardId(seedByKey.get(`${noun}::${en}`))));
+
+const GENERATED_CASE_EXAMPLES = loadSeed()
+  .filter((word) => !pilotNounIds.has(seedCardId(word)))
+  .flatMap((word) => PRACTICED_CASES.flatMap((grammaticalCase) => {
+    const shortCase = { nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase];
+    const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
+    return GENERATED_FRAMES[grammaticalCase].map((frame) => {
+      const target = word[grammaticalCase];
+      return {
+        id: `${seedCardId(word)}-${shortCase}-${frame.key}`,
+        version: CASE_EXAMPLE_VERSION,
+        nounId: seedCardId(word),
+        noun: word.noun,
+        grammaticalCase,
+        forms: Object.fromEntries(PRACTICED_CASES.map((caseName) => [caseName, word[caseName]])),
+        number: "singular",
+        determiner: "definite",
+        semanticType: "general",
+        before: frame.before,
+        target,
+        after: frame.after,
+        sentence: `${frame.before}${target}${frame.after}`,
+        translation: frame.translation(gloss),
+        trigger: frame.trigger,
+        cefr: word.cefr,
+        frequencyRank: word.frequencyRank,
+        status: "candidate",
+        reviewer: null,
+        reviewedAt: null,
+        reviewNotes: "Generated neutral frame; editorial review pending.",
+      };
+    });
+  }));
+
+export const CASE_EXAMPLES = [
+  ...CORE_CASE_EXAMPLES,
+  ...SUPPLEMENTAL_CASE_EXAMPLES,
+  ...GENERATED_CASE_EXAMPLES,
+];
+
 export function examplesForNoun(nounId, { status } = {}) {
   return CASE_EXAMPLES.filter(
     (example) => example.nounId === nounId && (!status || example.status === status)
@@ -186,7 +282,7 @@ export function verifiedExamplesForNoun(nounId) {
 export function validateCaseExamples(
   examples = CASE_EXAMPLES,
   words = loadSeed(),
-  { requiredCases = PRACTICED_CASES, minExamplesPerCase = 1, minVerifiedPerCase = 0 } = {}
+  { requiredCases = PRACTICED_CASES, minExamplesPerCase = 2, minVerifiedPerCase = 0 } = {}
 ) {
   const errors = [];
   const ids = new Set();
@@ -241,7 +337,9 @@ export function validateCaseExamples(
     nounCoverage.get(example.grammaticalCase).push(example);
   }
 
-  for (const [nounId, nounCoverage] of coverage) {
+  for (const word of words) {
+    const nounId = seedCardId(word);
+    const nounCoverage = coverage.get(nounId) || new Map();
     for (const grammaticalCase of requiredCases) {
       const caseExamples = nounCoverage.get(grammaticalCase) || [];
       if (caseExamples.length < minExamplesPerCase) {
