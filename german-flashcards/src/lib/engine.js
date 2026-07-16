@@ -67,23 +67,23 @@ export function buildAheadQueue(cards, { limit = 20, now = Date.now() } = {}) {
 }
 
 export function itemDue(entry, now = Date.now()) {
-  return dueMs(entry.schedule) <= now;
+  return dueMs(entry.schedule) <= now || (entry.meaningSchedule && dueMs(entry.meaningSchedule) <= now);
 }
 
 export function buildItemQueue(entries, { newPerDay = 15, now = Date.now() } = {}) {
-  const seen = entries.filter((entry) => !isNew(entry.schedule));
+  const seen = entries.filter((entry) => !isNew(entry.schedule) || (entry.meaningSchedule && !isNew(entry.meaningSchedule)));
   const due = seen
     .filter((entry) => itemDue(entry, now))
-    .sort((a, b) => dueMs(a.schedule) - dueMs(b.schedule));
-  const fresh = entries.filter((entry) => isNew(entry.schedule)).slice(0, newPerDay);
+    .sort((a, b) => Math.min(dueMs(a.schedule), a.meaningSchedule ? dueMs(a.meaningSchedule) : Infinity) - Math.min(dueMs(b.schedule), b.meaningSchedule ? dueMs(b.meaningSchedule) : Infinity));
+  const fresh = entries.filter((entry) => isNew(entry.schedule) && (!entry.meaningSchedule || isNew(entry.meaningSchedule))).slice(0, newPerDay);
   return [...due, ...fresh];
 }
 
 export function itemCounts(entries) {
   return {
-    due: entries.filter((entry) => itemDue(entry) && !isNew(entry.schedule)).length,
-    fresh: entries.filter((entry) => isNew(entry.schedule)).length,
-    learned: entries.filter((entry) => isReview(entry.schedule)).length,
+    due: entries.filter((entry) => itemDue(entry) && (!isNew(entry.schedule) || (entry.meaningSchedule && !isNew(entry.meaningSchedule)))).length,
+    fresh: entries.filter((entry) => isNew(entry.schedule) && (!entry.meaningSchedule || isNew(entry.meaningSchedule))).length,
+    learned: entries.filter((entry) => isReview(entry.schedule) && (!entry.meaningSchedule || isReview(entry.meaningSchedule))).length,
     total: entries.length,
   };
 }

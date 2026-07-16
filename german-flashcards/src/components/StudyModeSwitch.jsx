@@ -3,6 +3,7 @@ import React from "react";
 const MODES = [
   { id: "article", label: "Artikel", aria: "Artikelkarten" },
   { id: "case", label: "Fälle", aria: "Fallkarten" },
+  { id: "rules", label: "Regeln", aria: "Regelkarten" },
 ];
 
 export default function StudyModeSwitch({ value, onChange }) {

@@ -5,7 +5,9 @@ import DeckEditor from "./components/DeckEditor.jsx";
 import Stats from "./components/Stats.jsx";
 import StudyModeSwitch from "./components/StudyModeSwitch.jsx";
 import CaseFlashcard from "./components/CaseFlashcard.jsx";
+import RuleFlashcard from "./components/RuleFlashcard.jsx";
 import { CASE_EXAMPLES } from "./lib/caseExamples.js";
+import { GOVERNED_EXAMPLES } from "./lib/governedExamples.js";
 import { supabase, hasSupabase } from "./lib/supabaseClient.js";
 import {
   loadCards,
@@ -34,6 +36,8 @@ import {
 
 const NEW_PER_DAY = 15;
 const DAY = 864e5;
+const CASE_IDS = new Set(CASE_EXAMPLES.map((example) => example.id));
+const RULE_IDS = new Set(GOVERNED_EXAMPLES.map((example) => example.id));
 
 export default function App() {
   // ---- auth / session ----
@@ -59,6 +63,7 @@ export default function App() {
   const [loadError, setLoadError] = useState(null);
   const [caseCards, setCaseCards] = useState(null);
   const [caseQueue, setCaseQueue] = useState([]);
+  const [ruleQueue, setRuleQueue] = useState([]);
 
   const [revealed, setRevealed] = useState(false);
   const [aGrade, setAGrade] = useState(null);
@@ -76,6 +81,7 @@ export default function App() {
     }
   });
   const [casePos, setCasePos] = useState(0);
+  const [rulePos, setRulePos] = useState(0);
 
   useEffect(() => {
     try {
@@ -99,7 +105,8 @@ export default function App() {
         setCards(c);
         setQueue(buildQueue(c, { newPerDay: NEW_PER_DAY }));
         setCaseCards(loadedCaseCards);
-        setCaseQueue(buildItemQueue(loadedCaseCards, { newPerDay: NEW_PER_DAY }));
+        setCaseQueue(buildItemQueue(loadedCaseCards.filter((card) => CASE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
+        setRuleQueue(buildItemQueue(loadedCaseCards.filter((card) => RULE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
         setPos(0);
       } catch (e) {
         if (alive) setLoadError(e.message || "Dein Stapel konnte nicht geladen werden.");
@@ -114,6 +121,8 @@ export default function App() {
   const finished = pos >= queue.length;
   const currentCaseCard = caseQueue[casePos];
   const caseFinished = casePos >= caseQueue.length;
+  const currentRuleCard = ruleQueue[rulePos];
+  const rulesFinished = rulePos >= ruleQueue.length;
 
   useEffect(() => {
     if (!current) return;
@@ -192,11 +201,12 @@ export default function App() {
   );
 
   const completeCase = useCallback(
-    (rating) => {
-      if (!currentCaseCard || rating == null) return;
+    (rating, meaningRating) => {
+      if (!currentCaseCard || rating == null || meaningRating == null) return;
       const now = Date.now();
       const result = review(currentCaseCard.schedule, rating, now);
-      const updated = { ...currentCaseCard, schedule: result.item };
+      const meaningResult = review(currentCaseCard.meaningSchedule, meaningRating, now);
+      const updated = { ...currentCaseCard, schedule: result.item, meaningSchedule: meaningResult.item };
       const next = caseCards.map((card) => card.id === updated.id ? updated : card);
       setCaseCards(next);
       saveCaseCard(userId, updated, next).catch((error) =>
@@ -211,10 +221,41 @@ export default function App() {
         stability: result.item.stability,
         difficulty: result.item.difficulty,
         reviewed_at: new Date(now).toISOString(),
+      }, {
+        card_id: updated.id, track: "meaning", rating: meaningRating,
+        state: meaningResult.log.state, elapsed_days: meaningResult.log.elapsed_days,
+        stability: meaningResult.item.stability, difficulty: meaningResult.item.difficulty,
+        reviewed_at: new Date(now).toISOString(),
       }]).catch(() => {});
       setCasePos((position) => position + 1);
     },
     [caseCards, currentCaseCard, userId]
+  );
+
+  const completeRule = useCallback(
+    (rating, meaningRating) => {
+      if (!currentRuleCard || rating == null || meaningRating == null) return;
+      const now = Date.now();
+      const result = review(currentRuleCard.schedule, rating, now);
+      const meaningResult = review(currentRuleCard.meaningSchedule, meaningRating, now);
+      const updated = { ...currentRuleCard, schedule: result.item, meaningSchedule: meaningResult.item };
+      const next = caseCards.map((card) => card.id === updated.id ? updated : card);
+      setCaseCards(next);
+      saveCaseCard(userId, updated, next).catch((error) =>
+        setLoadError(error.message || "Der Fortschritt konnte nicht gespeichert werden.")
+      );
+      saveReviews(userId, [{
+        card_id: updated.id, track: "case", rating, state: result.log.state,
+        elapsed_days: result.log.elapsed_days, stability: result.item.stability,
+        difficulty: result.item.difficulty, reviewed_at: new Date(now).toISOString(),
+      }, {
+        card_id: updated.id, track: "meaning", rating: meaningRating,
+        state: meaningResult.log.state, elapsed_days: meaningResult.log.elapsed_days,
+        stability: meaningResult.item.stability, difficulty: meaningResult.item.difficulty,
+        reviewed_at: new Date(now).toISOString(),
+      }]).catch(() => {});
+      setRulePos((position) => position + 1);
+    }, [caseCards, currentRuleCard, userId]
   );
 
   useEffect(() => {
@@ -248,7 +289,11 @@ export default function App() {
   }, [cards]);
   const ahead = useMemo(() => (cards ? buildAheadQueue(cards) : []), [cards]);
   const caseStats = useMemo(
-    () => caseCards ? itemCounts(caseCards) : { due: 0, fresh: 0, learned: 0, total: 0 },
+    () => caseCards ? itemCounts(caseCards.filter((card) => CASE_IDS.has(card.id))) : { due: 0, fresh: 0, learned: 0, total: 0 },
+    [caseCards]
+  );
+  const ruleStats = useMemo(
+    () => caseCards ? itemCounts(caseCards.filter((card) => RULE_IDS.has(card.id))) : { due: 0, fresh: 0, learned: 0, total: 0 },
     [caseCards]
   );
 
@@ -273,8 +318,10 @@ export default function App() {
     setQueue(buildQueue(fresh, { newPerDay: NEW_PER_DAY }));
     setPos(0);
     setCaseCards(freshCaseCards);
-    setCaseQueue(buildItemQueue(freshCaseCards, { newPerDay: NEW_PER_DAY }));
+    setCaseQueue(buildItemQueue(freshCaseCards.filter((card) => CASE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
+    setRuleQueue(buildItemQueue(freshCaseCards.filter((card) => RULE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
     setCasePos(0);
+    setRulePos(0);
     setRevealed(false);
     setAGrade(null);
     setMGrade(null);
@@ -317,6 +364,7 @@ export default function App() {
     setQueue([]);
     setCaseCards(null);
     setCaseQueue([]);
+    setRuleQueue([]);
     setPos(0);
     setView("review");
   }
@@ -328,11 +376,16 @@ export default function App() {
 
   const progress = studyMode === "case"
     ? caseQueue.length ? Math.min(casePos / caseQueue.length, 1) : 0
+    : studyMode === "rules"
+      ? ruleQueue.length ? Math.min(rulePos / ruleQueue.length, 1) : 0
     : queue.length
       ? Math.min(pos / queue.length, 1)
       : 0;
   const currentCaseExample = currentCaseCard
     ? CASE_EXAMPLES.find((example) => example.id === currentCaseCard.id)
+    : null;
+  const currentRuleExample = currentRuleCard
+    ? GOVERNED_EXAMPLES.find((example) => example.id === currentRuleCard.id)
     : null;
 
   return (
@@ -341,11 +394,11 @@ export default function App() {
         <div className="brand">artikel<span className="brand__dot">.</span></div>
         <div className="topbar__right">
           <div className="topbar__stats">
-            {studyMode === "case" ? (
+            {studyMode === "case" || studyMode === "rules" ? (
               <>
-                <span><b>{caseStats.due}</b> fällig</span>
-                <span><b>{caseStats.fresh}</b> neu</span>
-                <span><b>{caseStats.learned}</b> gelernt</span>
+                <span><b>{studyMode === "rules" ? ruleStats.due : caseStats.due}</b> fällig</span>
+                <span><b>{studyMode === "rules" ? ruleStats.fresh : caseStats.fresh}</b> neu</span>
+                <span><b>{studyMode === "rules" ? ruleStats.learned : caseStats.learned}</b> gelernt</span>
               </>
             ) : (
               <>
@@ -393,6 +446,17 @@ export default function App() {
                 }}>Warteschlange neu aufbauen</button>
               </div>
             </div>
+          ) : studyMode === "rules" && !rulesFinished && currentRuleExample ? (
+            <RuleFlashcard
+              key={currentRuleExample.id}
+              example={currentRuleExample}
+              onComplete={completeRule}
+            />
+          ) : studyMode === "rules" ? (
+            <div className="done">
+              <h2>Fertig f&uuml;r jetzt.</h2>
+              <p className="done__line">Alle fälligen Regelkarten wurden wiederholt.</p>
+            </div>
           ) : !finished && current ? (
             <Flashcard
               key={current.id + pos}
@@ -431,7 +495,7 @@ export default function App() {
 
       <footer className="footer">
         <span>
-          {studyMode === "case"
+          {studyMode === "case" || studyMode === "rules"
             ? <>Nominativ = blau &middot; Dativ = orange &middot; Akkusativ = mint</>
             : <>der = blau &middot; die = orange &middot; das = mint</>}
         </span>

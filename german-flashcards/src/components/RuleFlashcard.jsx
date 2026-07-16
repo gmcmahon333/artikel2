@@ -8,9 +8,10 @@ const CASES = [
   { value: "accusative", label: "Akkusativ", hint: "3" },
 ];
 
-const CASE_LABELS = Object.fromEntries(CASES.map((item) => [item.value, item.label]));
+const LABELS = Object.fromEntries(CASES.map((item) => [item.value, item.label]));
+const TYPE_LABELS = { verb: "Verb", preposition: "Präposition", copula: "Kopulaverb" };
 
-export default function CaseFlashcard({ example, onComplete }) {
+export default function RuleFlashcard({ example, onComplete }) {
   const [answer, setAnswer] = useState(null);
   const [incorrectAttempt, setIncorrectAttempt] = useState(0);
   const [grade, setGrade] = useState(null);
@@ -25,7 +26,7 @@ export default function CaseFlashcard({ example, onComplete }) {
     setShownAt(Date.now());
   }, [example.id]);
 
-  function chooseCase(value) {
+  function choose(value) {
     if (answer) return;
     if (value === example.grammaticalCase) {
       setAnswer(value);
@@ -42,8 +43,7 @@ export default function CaseFlashcard({ example, onComplete }) {
   useEffect(() => {
     function onKey(event) {
       if (answer || !["1", "2", "3"].includes(event.key)) return;
-      const option = CASES[Number(event.key) - 1];
-      chooseCase(option.value);
+      choose(CASES[Number(event.key) - 1].value);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -51,7 +51,7 @@ export default function CaseFlashcard({ example, onComplete }) {
 
   return (
     <div
-      className="card case-card"
+      className="card rule-card"
       data-revealed={answer ? "true" : "false"}
       data-case={answer ? example.grammaticalCase : "none"}
       data-incorrect={incorrectAttempt ? (incorrectAttempt % 2 ? "odd" : "even") : "false"}
@@ -59,38 +59,30 @@ export default function CaseFlashcard({ example, onComplete }) {
       <div className="card__accent" />
       <p className="card__prompt">
         {answer
-          ? "Deklination + Bedeutung"
+          ? "Regel + Beispiel"
           : incorrectAttempt
             ? "Nicht ganz — versuch es noch einmal"
-            : "Welche Deklination passt?"}
+            : "Welchen Fall verlangt dieses Wort?"}
       </p>
 
-      <p className="case-card__sentence">
-        {example.before}
-        {answer ? <mark>{example.target}</mark> : <span className="case-card__blank" aria-label="Lücke" />}
-        {example.after}
-      </p>
+      <p className="rule-card__type">{TYPE_LABELS[example.ruleType]}</p>
+      <h1 className="rule-card__governor">{example.governor}</h1>
 
-      <div className="case-options" role="group" aria-label="Passende Deklination auswählen">
+      <div className="rule-options" role="group" aria-label="Grammatischen Fall auswählen">
         {CASES.map((option) => {
           const correct = answer && option.value === example.grammaticalCase;
           return (
-            <div className="case-choice" key={option.value} data-case={option.value}>
-              <button
-                type="button"
-                className={`case-option${correct ? " case-option--correct" : ""}`}
-                data-case={option.value}
-                onClick={() => chooseCase(option.value)}
-                disabled={Boolean(answer)}
-                aria-pressed={Boolean(correct)}
-                aria-describedby={`case-label-${option.value}`}
-              >
-                {example.forms[option.value]}<kbd>{option.hint}</kbd>
-              </button>
-              <span className="case-choice__label" id={`case-label-${option.value}`}>
-                {option.label}
-              </span>
-            </div>
+            <button
+              key={option.value}
+              type="button"
+              className={`rule-option${correct ? " rule-option--correct" : ""}`}
+              data-case={option.value}
+              onClick={() => choose(option.value)}
+              disabled={Boolean(answer)}
+              aria-pressed={Boolean(correct)}
+            >
+              {option.label}<kbd>{option.hint}</kbd>
+            </button>
           );
         })}
       </div>
@@ -98,10 +90,24 @@ export default function CaseFlashcard({ example, onComplete }) {
       {answer && (
         <div className="case-result" aria-live="polite">
           <p className="case-result__status" data-case={example.grammaticalCase}>
-            Richtiger Fall: {CASE_LABELS[example.grammaticalCase]}
+            Richtiger Fall: {LABELS[example.grammaticalCase]}
+          </p>
+          <p className="rule-card__example">
+            {example.before}<mark>{example.target}</mark>{example.after}
           </p>
           <p className="case-result__translation">{example.translation}</p>
           <p className="case-result__trigger">Warum? {example.trigger}</p>
+          <table className="rule-reference">
+            <caption>Andere Fälle zum Vergleich</caption>
+            <tbody>
+              {CASES.filter((item) => item.value !== example.grammaticalCase).map((item) => (
+                <tr key={item.value}>
+                  <th scope="row" data-case={item.value}>{item.label}</th>
+                  <td>{example.forms[item.value]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           <GradeBar
             label="Wie gut kanntest du die Bedeutung?"
             value={meaningGrade}

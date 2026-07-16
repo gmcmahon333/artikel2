@@ -22,3 +22,19 @@ test("each case example receives its own FSRS schedule", () => {
   assert.notDeepEqual(reviewed.schedule, second.schedule);
   assert.equal(buildItemQueue([reviewed, second], { newPerDay: 15, now }).map((item) => item.id).includes("dative"), true);
 });
+
+test("case and translation tracks are independently scheduled", () => {
+  const now = Date.now();
+  const card = {
+    id: "rule-mit",
+    schedule: freshItem(now),
+    meaningSchedule: freshItem(now),
+  };
+  const reviewed = {
+    ...card,
+    schedule: review(card.schedule, RATING.EASY, now).item,
+    meaningSchedule: review(card.meaningSchedule, RATING.MISSED, now).item,
+  };
+  assert.notDeepEqual(reviewed.schedule, reviewed.meaningSchedule);
+  assert.equal(buildItemQueue([reviewed], { now: now + 864e5 }).length, 1);
+});

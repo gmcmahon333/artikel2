@@ -70,7 +70,7 @@ body {
 /* ---- progress ---- */
 .mode-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   margin: 0 0 10px;
   padding: 4px;
@@ -300,6 +300,84 @@ body {
 .case-result__translation { margin: 0 0 7px; color: var(--text-2); font-size: 0.98rem; }
 .case-result__trigger { margin: 0; color: var(--text-3); font-family: var(--mono); font-size: 0.7rem; }
 .case-result__next { width: 100%; margin-top: 18px; }
+
+/* ---- governing-rule cards ---- */
+.rule-card[data-case="nominative"] { --g: var(--der); }
+.rule-card[data-case="dative"] { --g: var(--die); }
+.rule-card[data-case="accusative"] { --g: var(--das); }
+.rule-card__type {
+  margin: 24px 0 6px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.rule-card__governor {
+  margin: 0 0 30px;
+  font-family: var(--display);
+  font-size: clamp(2.7rem, 10vw, 4.2rem);
+  line-height: 1;
+}
+.rule-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rule-option {
+  --case-color: var(--text-3);
+  position: relative;
+  padding: 15px 6px;
+  font-family: var(--body);
+  font-size: 0.82rem;
+  color: var(--case-color);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.rule-option[data-case="nominative"] { --case-color: var(--der); }
+.rule-option[data-case="dative"] { --case-color: var(--die); }
+.rule-option[data-case="accusative"] { --case-color: var(--das); }
+.rule-option:hover:not(:disabled) { background: #20293a; border-color: var(--case-color); }
+.rule-option:disabled { cursor: default; opacity: 0.4; }
+.rule-option--correct:disabled { opacity: 1; border-color: var(--case-color); box-shadow: inset 0 -3px 0 var(--case-color); }
+.rule-option kbd { position: absolute; top: 5px; right: 7px; }
+.rule-card__example {
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-size: 1.3rem;
+  line-height: 1.45;
+}
+.rule-card__example mark {
+  color: var(--text);
+  background: color-mix(in srgb, var(--g) 18%, transparent);
+  border-bottom: 2px solid var(--g);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.rule-reference {
+  width: 100%;
+  margin: 18px 0;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.rule-reference caption {
+  margin-bottom: 7px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.rule-reference th,
+.rule-reference td {
+  padding: 8px 10px;
+  text-align: left;
+  border: 1px solid var(--line);
+}
+.rule-reference th { width: 38%; font-family: var(--mono); font-weight: 500; }
+.rule-reference th[data-case="nominative"] { color: var(--der); }
+.rule-reference th[data-case="dative"] { color: var(--die); }
+.rule-reference th[data-case="accusative"] { color: var(--das); }
+.case-result .gradebar { margin-top: 18px; }
 
 /* ---- article choice ---- */
 .articles {

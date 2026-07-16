@@ -9,6 +9,7 @@ import { loadSeed, seedAdditionsFor, seedCardId } from "./deck.js";
 import { freshItem } from "./engine.js";
 import { supabase, hasSupabase } from "./supabaseClient.js";
 import { CASE_EXAMPLES } from "./caseExamples.js";
+import { GOVERNED_EXAMPLES } from "./governedExamples.js";
 
 const LOCAL_KEY = "artikel.cards.v1";
 const LOCAL_REVIEWS = "artikel.reviews.v1";
@@ -98,11 +99,12 @@ export async function loadCards(userId) {
 }
 
 function buildCaseCards(now = Date.now()) {
-  return CASE_EXAMPLES.map((example) => ({
+  return [...CASE_EXAMPLES, ...GOVERNED_EXAMPLES].map((example) => ({
     id: example.id,
     nounId: example.nounId,
     grammaticalCase: example.grammaticalCase,
     schedule: freshItem(now),
+    meaningSchedule: freshItem(now),
   }));
 }
 
@@ -112,6 +114,7 @@ function caseRowToCard(row) {
     nounId: row.noun_id,
     grammaticalCase: row.grammatical_case,
     schedule: row.schedule_state,
+    meaningSchedule: row.meaning_state || row.schedule_state,
   };
 }
 
@@ -122,14 +125,42 @@ function caseCardToRow(userId, card) {
     noun_id: card.nounId,
     grammatical_case: card.grammaticalCase,
     schedule_state: card.schedule,
+    meaning_state: card.meaningSchedule,
   };
+}
+
+function caseTableUnavailable(error) {
+  return error?.code === "PGRST205" || /case_cards/i.test(error?.message || "");
+}
+
+function loadLocalCaseCards(seeded) {
+  try {
+    const raw = localStorage.getItem(LOCAL_CASE_CARDS);
+    const existing = raw ? JSON.parse(raw).map((card) => ({
+      ...card,
+      meaningSchedule: card.meaningSchedule || card.schedule,
+    })) : [];
+    const existingIds = new Set(existing.map((card) => card.id));
+    const merged = [...existing, ...seeded.filter((card) => !existingIds.has(card.id))];
+    localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(merged));
+    return merged;
+  } catch {
+    return seeded;
+  }
+}
+
+function saveLocalCaseCards(cards) {
+  localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(cards));
 }
 
 export async function loadCaseCards(userId) {
   const seeded = buildCaseCards();
   if (hasSupabase) {
     const { data, error } = await supabase.from("case_cards").select("*").eq("user_id", userId);
-    if (error) throw error;
+    if (error) {
+      if (caseTableUnavailable(error)) return loadLocalCaseCards(seeded);
+      throw error;
+    }
     const existing = (data || []).map(caseRowToCard);
     const existingIds = new Set(existing.map((card) => card.id));
     const additions = seeded.filter((card) => !existingIds.has(card.id));
@@ -141,16 +172,7 @@ export async function loadCaseCards(userId) {
     }
     return [...existing, ...additions];
   }
-  try {
-    const raw = localStorage.getItem(LOCAL_CASE_CARDS);
-    const existing = raw ? JSON.parse(raw) : [];
-    const existingIds = new Set(existing.map((card) => card.id));
-    const merged = [...existing, ...seeded.filter((card) => !existingIds.has(card.id))];
-    localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(merged));
-    return merged;
-  } catch {
-    return seeded;
-  }
+  return loadLocalCaseCards(seeded);
 }
 
 export async function saveCaseCard(userId, card, allCards) {
@@ -158,16 +180,23 @@ export async function saveCaseCard(userId, card, allCards) {
     const { error } = await supabase
       .from("case_cards")
       .upsert(caseCardToRow(userId, card), { onConflict: "user_id,id" });
-    if (error) throw error;
+    if (error) {
+      if (caseTableUnavailable(error)) {
+        saveLocalCaseCards(allCards);
+        return;
+      }
+      throw error;
+    }
     return;
   }
-  localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(allCards));
+  saveLocalCaseCards(allCards);
 }
 
 export async function resetCaseCards(userId) {
   if (hasSupabase) {
     const { error } = await supabase.from("case_cards").delete().eq("user_id", userId);
-    if (error) throw error;
+    if (error && !caseTableUnavailable(error)) throw error;
+    if (error) localStorage.removeItem(LOCAL_CASE_CARDS);
   } else {
     localStorage.removeItem(LOCAL_CASE_CARDS);
   }
