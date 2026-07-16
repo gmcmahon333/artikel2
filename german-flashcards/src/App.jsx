@@ -54,6 +54,7 @@ export default function App() {
   const [aGrade, setAGrade] = useState(null);
   const [mGrade, setMGrade] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [incorrectAttempt, setIncorrectAttempt] = useState(0);
   const cardShownAt = useRef(Date.now());
   const [stat, setStat] = useState({ done: 0, artMissed: 0, meaMissed: 0 });
   const [view, setView] = useState("review"); // "review" | "deck" | "stats"
@@ -90,6 +91,7 @@ export default function App() {
     setAGrade(null);
     setMGrade(null);
     setSelectedArticle(null);
+    setIncorrectAttempt(0);
   }, [current?.id, pos]);
 
   const commit = useCallback(
@@ -122,6 +124,7 @@ export default function App() {
       setAGrade(null);
       setMGrade(null);
       setSelectedArticle(null);
+      setIncorrectAttempt(0);
       setPos((p) => p + 1);
     },
     [cards, current, userId]
@@ -131,8 +134,14 @@ export default function App() {
     (article) => {
       if (revealed || !current) return;
       const correct = article === current.gender;
+      if (!correct) {
+        setAGrade(RATING.MISSED);
+        setSelectedArticle(null);
+        setIncorrectAttempt((attempt) => attempt + 1);
+        return;
+      }
       const elapsed = Date.now() - cardShownAt.current;
-      const grade = !correct
+      const grade = aGrade === RATING.MISSED
         ? RATING.MISSED
         : elapsed <= 3000
           ? RATING.EASY
@@ -141,7 +150,7 @@ export default function App() {
       setAGrade(grade);
       setRevealed(true);
     },
-    [current, revealed]
+    [aGrade, current, revealed]
   );
   const gradeMeaning = useCallback(
     (g) => {
@@ -194,6 +203,7 @@ export default function App() {
     setAGrade(null);
     setMGrade(null);
     setSelectedArticle(null);
+    setIncorrectAttempt(0);
     setStat({ done: 0, artMissed: 0, meaMissed: 0 });
   }
   async function hardReset() {
@@ -205,6 +215,7 @@ export default function App() {
     setAGrade(null);
     setMGrade(null);
     setSelectedArticle(null);
+    setIncorrectAttempt(0);
     setStat({ done: 0, artMissed: 0, meaMissed: 0 });
   }
 
@@ -285,6 +296,7 @@ export default function App() {
               card={current}
               revealed={revealed}
               selectedArticle={selectedArticle}
+              incorrectAttempt={incorrectAttempt}
               mGrade={mGrade}
               onChooseArticle={chooseArticle}
               onGradeMeaning={gradeMeaning}
@@ -314,7 +326,7 @@ export default function App() {
         </main>
       )}
 
-      <footer className="footer"><span>der = blau &middot; die = rosa &middot; das = mint</span></footer>
+      <footer className="footer"><span>der = blau &middot; die = orange &middot; das = mint</span></footer>
     </div>
   );
 }

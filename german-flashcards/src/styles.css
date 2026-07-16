@@ -9,8 +9,9 @@
   --text-3: #5a6378;
 
   --der: #5b9cff;
-  --die: #ff6585;
+  --die: #f5a64a;
   --das: #34d9a8;
+  --error: #ff6585;
 
   --display: "Space Grotesk", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, sans-serif;
@@ -108,6 +109,30 @@ body {
 .card[data-gender="der"] { --g: var(--der); }
 .card[data-gender="die"] { --g: var(--die); }
 .card[data-gender="das"] { --g: var(--das); }
+
+@keyframes card-shake-odd {
+  0%, 100% { transform: translateX(0); border-color: var(--line); box-shadow: none; }
+  22% { transform: translateX(-7px); border-color: var(--error); }
+  46% { transform: translateX(6px); border-color: var(--error); box-shadow: 0 0 0 1px color-mix(in srgb, var(--error) 30%, transparent); }
+  68% { transform: translateX(-3px); border-color: var(--error); }
+  84% { transform: translateX(2px); }
+}
+@keyframes card-shake-even {
+  0%, 100% { transform: translateX(0); border-color: var(--line); box-shadow: none; }
+  22% { transform: translateX(-7px); border-color: var(--error); }
+  46% { transform: translateX(6px); border-color: var(--error); box-shadow: 0 0 0 1px color-mix(in srgb, var(--error) 30%, transparent); }
+  68% { transform: translateX(-3px); border-color: var(--error); }
+  84% { transform: translateX(2px); }
+}
+.card[data-incorrect="odd"] {
+  animation: card-shake-odd 260ms ease-out;
+}
+.card[data-incorrect="even"] {
+  animation: card-shake-even 260ms ease-out;
+}
+.card[data-revealed="false"][data-incorrect]:not([data-incorrect="false"]) .card__prompt {
+  color: var(--error);
+}
 
 .card__accent {
   position: absolute;
@@ -309,6 +334,7 @@ kbd {
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  .card[data-incorrect] { animation: none !important; }
 }
 
 /* ---- auth + splash ---- */
@@ -359,7 +385,7 @@ kbd {
 }
 .auth__field input::placeholder { color: var(--text-3); }
 .auth__submit { margin-top: 6px; width: 100%; }
-.auth__error { color: var(--die); font-size: 0.82rem; margin: 0; }
+.auth__error { color: var(--error); font-size: 0.82rem; margin: 0; }
 .auth__notice { color: var(--das); font-size: 0.82rem; margin: 0; }
 .auth__toggle {
   margin-top: 18px;

@@ -8,6 +8,7 @@ export default function Flashcard({
   card,
   revealed,
   selectedArticle,
+  incorrectAttempt,
   mGrade,
   onChooseArticle,
   onGradeMeaning,
@@ -20,12 +21,17 @@ export default function Flashcard({
       className="card"
       data-revealed={revealed ? "true" : "false"}
       data-gender={revealed ? card.gender : "none"}
+      data-incorrect={incorrectAttempt ? (incorrectAttempt % 2 ? "odd" : "even") : "false"}
     >
       <div className="card__accent" />
 
       <div className="card__face">
         <p className="card__prompt">
-          {revealed ? "Artikel + Bedeutung" : "Welcher Artikel?"}
+          {revealed
+            ? "Artikel + Bedeutung"
+            : incorrectAttempt
+              ? "Nicht ganz — versuch es noch einmal"
+              : "Welcher Artikel?"}
         </p>
 
         {imageUrl && !imageFailed && (
