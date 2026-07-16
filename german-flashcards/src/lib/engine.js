@@ -77,10 +77,10 @@ export function counts(cards) {
 }
 
 export function humanInterval(days) {
-  if (days < 1) return "today";
-  if (days === 1) return "1 day";
-  if (days < 30) return `${days} days`;
-  if (days < 60) return "1 month";
-  if (days < 365) return `${Math.round(days / 30)} months`;
-  return `${(days / 365).toFixed(1)} years`;
+  if (days < 1) return "heute";
+  if (days === 1) return "einem Tag";
+  if (days < 30) return `${days} Tagen`;
+  if (days < 60) return "einem Monat";
+  if (days < 365) return `${Math.round(days / 30)} Monaten`;
+  return `${(days / 365).toFixed(1)} Jahren`;
 }

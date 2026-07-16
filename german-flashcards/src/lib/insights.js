@@ -33,7 +33,7 @@ export function trackComparison(ins) {
   const m = ins.meaning.stability;
   if (!a || !m) return null;
   const ratio = m / a; // how much longer meanings last vs articles
-  if (ratio >= 1.15) return `Your genders fade about ${ratio.toFixed(1)}× faster than your meanings.`;
-  if (ratio <= 0.87) return `Your meanings fade about ${(1 / ratio).toFixed(1)}× faster than your genders.`;
-  return "Your genders and meanings are sticking about equally well.";
+  if (ratio >= 1.15) return `Du vergisst Artikel etwa ${ratio.toFixed(1)}× schneller als Bedeutungen.`;
+  if (ratio <= 0.87) return `Du vergisst Bedeutungen etwa ${(1 / ratio).toFixed(1)}× schneller als Artikel.`;
+  return "Artikel und Bedeutungen bleiben ungefähr gleich gut im Gedächtnis.";
 }

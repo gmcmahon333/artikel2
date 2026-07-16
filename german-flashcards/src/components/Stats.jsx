@@ -8,9 +8,9 @@ function pct(x) {
 function days(x) {
   if (x == null) return "—";
   if (x < 1) return "<1d";
-  if (x < 30) return `${Math.round(x)}d`;
-  if (x < 365) return `${Math.round(x / 30)}mo`;
-  return `${(x / 365).toFixed(1)}y`;
+  if (x < 30) return `${Math.round(x)} T.`;
+  if (x < 365) return `${Math.round(x / 30)} Mon.`;
+  return `${(x / 365).toFixed(1)} J.`;
 }
 
 export default function Stats({ userId, cards, onClose }) {
@@ -26,7 +26,7 @@ export default function Stats({ userId, cards, onClose }) {
     };
   }, [userId]);
 
-  if (reviews === null) return <div className="stats"><p className="stats__empty">Loading…</p></div>;
+  if (reviews === null) return <div className="stats"><p className="stats__empty">Wird geladen…</p></div>;
 
   const ins = computeInsights(cards, reviews);
   const compare = trackComparison(ins);
@@ -34,25 +34,25 @@ export default function Stats({ userId, cards, onClose }) {
   return (
     <div className="stats">
       <div className="stats__head">
-        <h2>What it's learned</h2>
-        <button className="btn btn--ghost" onClick={onClose}>Done</button>
+        <h2>Was das Modell gelernt hat</h2>
+        <button className="btn btn--ghost" onClick={onClose}>Fertig</button>
       </div>
 
       {ins.total === 0 ? (
         <p className="stats__empty">
-          Nothing yet — review some cards and this fills in. Every grade you give
-          is logged and feeds the model.
+          Noch keine Daten — wiederhole ein paar Karten, dann füllt sich dieser
+          Bereich. Jede Bewertung hilft dem Modell beim Lernen.
         </p>
       ) : (
         <>
           <div className="stats__big">
             <div className="stats__metric">
               <span className="stats__num">{ins.total}</span>
-              <span className="stats__lab">reviews logged</span>
+              <span className="stats__lab">Wiederholungen</span>
             </div>
             <div className="stats__metric">
               <span className="stats__num">{pct(ins.overallRecall)}</span>
-              <span className="stats__lab">recall rate</span>
+              <span className="stats__lab">Erinnerungsquote</span>
             </div>
           </div>
 
@@ -60,24 +60,24 @@ export default function Stats({ userId, cards, onClose }) {
 
           <div className="stats__tracks">
             <div className="stats__track" data-tone="article">
-              <span className="stats__tname">Articles</span>
-              <div className="stats__trow"><span>recall</span><b>{pct(ins.article.recall)}</b></div>
-              <div className="stats__trow"><span>avg memory</span><b>{days(ins.article.stability)}</b></div>
-              <div className="stats__trow"><span>reviews</span><b>{ins.article.reviews}</b></div>
+              <span className="stats__tname">Artikel</span>
+              <div className="stats__trow"><span>Erinnerung</span><b>{pct(ins.article.recall)}</b></div>
+              <div className="stats__trow"><span>Ø Gedächtnis</span><b>{days(ins.article.stability)}</b></div>
+              <div className="stats__trow"><span>Wiederholungen</span><b>{ins.article.reviews}</b></div>
             </div>
             <div className="stats__track" data-tone="meaning">
-              <span className="stats__tname">Meanings</span>
-              <div className="stats__trow"><span>recall</span><b>{pct(ins.meaning.recall)}</b></div>
-              <div className="stats__trow"><span>avg memory</span><b>{days(ins.meaning.stability)}</b></div>
-              <div className="stats__trow"><span>reviews</span><b>{ins.meaning.reviews}</b></div>
+              <span className="stats__tname">Bedeutungen</span>
+              <div className="stats__trow"><span>Erinnerung</span><b>{pct(ins.meaning.recall)}</b></div>
+              <div className="stats__trow"><span>Ø Gedächtnis</span><b>{days(ins.meaning.stability)}</b></div>
+              <div className="stats__trow"><span>Wiederholungen</span><b>{ins.meaning.reviews}</b></div>
             </div>
           </div>
 
           <p className="stats__foot">
-            "Avg memory" is how long FSRS expects each thing to stick right now —
-            it grows every time you recall and resets when you miss. Once you've
-            logged a few hundred reviews, the model can refit to your personal
-            curve (see README).
+            „Ø Gedächtnis“ zeigt, wie lange FSRS erwartet, dass du dich momentan
+            erinnerst. Der Wert wächst bei jeder richtigen Antwort und wird bei
+            einer falschen Antwort zurückgesetzt. Nach einigen hundert
+            Wiederholungen kann sich das Modell an deine persönliche Lernkurve anpassen.
           </p>
         </>
       )}

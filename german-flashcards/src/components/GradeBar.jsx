@@ -2,9 +2,9 @@ import React from "react";
 import { RATING } from "../lib/engine.js";
 
 const BUTTONS = [
-  { key: "MISSED", label: "Missed", grade: RATING.MISSED, hint: "1" },
-  { key: "GOT", label: "Got it", grade: RATING.GOT, hint: "2" },
-  { key: "EASY", label: "Easy", grade: RATING.EASY, hint: "3" },
+  { key: "MISSED", label: "Nicht gewusst", grade: RATING.MISSED, hint: "1" },
+  { key: "GOT", label: "Gewusst", grade: RATING.GOT, hint: "2" },
+  { key: "EASY", label: "Leicht", grade: RATING.EASY, hint: "3" },
 ];
 
 export default function GradeBar({ label, value, active, onGrade }) {

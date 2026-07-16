@@ -7,11 +7,9 @@ const ARTICLE_LABEL = { der: "der", die: "die", das: "das" };
 export default function Flashcard({
   card,
   revealed,
-  onReveal,
-  aGrade,
+  selectedArticle,
   mGrade,
-  activeAxis,
-  onGradeArticle,
+  onChooseArticle,
   onGradeMeaning,
 }) {
   const imageUrl = nounImageUrl(card);
@@ -27,7 +25,7 @@ export default function Flashcard({
 
       <div className="card__face">
         <p className="card__prompt">
-          {revealed ? "Artikel + Bedeutung" : "Welcher Artikel? Welche Bedeutung?"}
+          {revealed ? "Artikel + Bedeutung" : "Welcher Artikel?"}
         </p>
 
         {imageUrl && !imageFailed && (
@@ -53,22 +51,35 @@ export default function Flashcard({
         </div>
       </div>
 
-      {!revealed ? (
-        <button className="reveal" onClick={onReveal}>
-          Reveal <kbd>Space</kbd>
-        </button>
-      ) : (
+      <div className="articles" role="group" aria-label="Deutschen Artikel auswählen">
+        {Object.keys(ARTICLE_LABEL).map((article, index) => {
+          const chosen = selectedArticle === article;
+          const correct = revealed && article === card.gender;
+          const showChosen = chosen && (!revealed || article === card.gender);
+          return (
+            <button
+              key={article}
+              className={`article-choice${showChosen ? " article-choice--chosen" : ""}${correct ? " article-choice--correct" : ""}`}
+              data-gender={article}
+              onClick={() => onChooseArticle(article)}
+              disabled={revealed}
+              aria-pressed={chosen}
+            >
+              {article}<kbd>{index + 1}</kbd>
+            </button>
+          );
+        })}
+      </div>
+
+      {revealed && (
         <div className="grades">
+          <p className="article-result" data-gender={card.gender}>
+            {selectedArticle === card.gender ? "Richtiger Artikel" : `Richtiger Artikel: ${card.gender}`}
+          </p>
           <GradeBar
-            label="Article"
-            value={aGrade}
-            active={activeAxis === "article"}
-            onGrade={onGradeArticle}
-          />
-          <GradeBar
-            label="Meaning"
+            label="Wie gut kanntest du die Bedeutung?"
             value={mGrade}
-            active={activeAxis === "meaning"}
+            active
             onGrade={onGradeMeaning}
           />
         </div>

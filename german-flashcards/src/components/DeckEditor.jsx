@@ -28,8 +28,8 @@ export default function DeckEditor({ cards, onAdd, onUpdate, onDelete, onClose }
   return (
     <div className="editor">
       <div className="editor__head">
-        <h2>Deck <span className="editor__count">{cards.length}</span></h2>
-        <button className="btn btn--ghost" onClick={onClose}>Done</button>
+        <h2>Stapel <span className="editor__count">{cards.length}</span></h2>
+        <button className="btn btn--ghost" onClick={onClose}>Fertig</button>
       </div>
 
       <form className="editor__add" onSubmit={submitNew}>
@@ -39,23 +39,23 @@ export default function DeckEditor({ cards, onAdd, onUpdate, onDelete, onClose }
             data-gender={draft.gender}
             value={draft.gender}
             onChange={(e) => setDraft({ ...draft, gender: e.target.value })}
-            aria-label="Gender"
+            aria-label="Artikel"
           >
             {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
           <input
             className="ein"
-            placeholder="Noun (e.g. Tisch)"
+            placeholder="Substantiv (z. B. Tisch)"
             value={draft.noun}
             onChange={(e) => setDraft({ ...draft, noun: e.target.value })}
           />
           <input
             className="ein"
-            placeholder="Meaning (e.g. table)"
+            placeholder="Bedeutung (z. B. table)"
             value={draft.en}
             onChange={(e) => setDraft({ ...draft, en: e.target.value })}
           />
-          <button className="btn editor__addbtn" type="submit">Add</button>
+          <button className="btn editor__addbtn" type="submit">Hinzufügen</button>
         </div>
       </form>
 
@@ -74,8 +74,8 @@ export default function DeckEditor({ cards, onAdd, onUpdate, onDelete, onClose }
                 </select>
                 <input className="ein" value={edit.noun} onChange={(e) => setEdit({ ...edit, noun: e.target.value })} />
                 <input className="ein" value={edit.en} onChange={(e) => setEdit({ ...edit, en: e.target.value })} />
-                <button className="iconbtn" onClick={() => saveEdit(c.id)} title="Save">✓</button>
-                <button className="iconbtn" onClick={() => setEditingId(null)} title="Cancel">✕</button>
+                <button className="iconbtn" onClick={() => saveEdit(c.id)} title="Speichern">✓</button>
+                <button className="iconbtn" onClick={() => setEditingId(null)} title="Abbrechen">✕</button>
               </div>
             ) : (
               <>
@@ -84,8 +84,8 @@ export default function DeckEditor({ cards, onAdd, onUpdate, onDelete, onClose }
                   <span className="editor__en">{c.en}</span>
                 </span>
                 <span className="editor__actions">
-                  <button className="iconbtn" onClick={() => startEdit(c)} title="Edit">✎</button>
-                  <button className="iconbtn" onClick={() => onDelete(c.id)} title="Delete">🗑</button>
+                  <button className="iconbtn" onClick={() => startEdit(c)} title="Bearbeiten">✎</button>
+                  <button className="iconbtn" onClick={() => onDelete(c.id)} title="Löschen">🗑</button>
                 </span>
               </>
             )}

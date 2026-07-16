@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "icons/apple-touch-icon.png"],
       manifest: {
-        name: "artikel — German trainer",
+        name: "artikel — Deutschtrainer",
         short_name: "artikel",
-        description: "Adaptive German vocab + article trainer",
+        description: "Adaptiver Trainer für deutschen Wortschatz und Artikel",
         theme_color: "#0b0e14",
         background_color: "#0b0e14",
         display: "standalone",

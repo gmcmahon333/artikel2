@@ -20,7 +20,7 @@ export default function Auth() {
         if (error) throw error;
         // If email confirmation is on, there's a user but no session yet.
         if (data.user && !data.session) {
-          setNotice("Check your email to confirm, then sign in.");
+          setNotice("Bestätige deine E-Mail-Adresse und melde dich danach an.");
           setMode("signin");
         }
       } else {
@@ -28,7 +28,7 @@ export default function Auth() {
         if (error) throw error;
       }
     } catch (err) {
-      setError(err.message || "Something went wrong.");
+      setError(err.message || "Etwas ist schiefgegangen.");
     } finally {
       setBusy(false);
     }
@@ -39,11 +39,11 @@ export default function Auth() {
       <div className="auth__brand">
         artikel<span className="brand__dot">.</span>
       </div>
-      <p className="auth__tag">Your decks, synced everywhere.</p>
+      <p className="auth__tag">Deine Stapel, überall synchron.</p>
 
       <form className="auth__form" onSubmit={submit}>
         <label className="auth__field">
-          <span>Email</span>
+          <span>E-Mail</span>
           <input
             type="email"
             value={email}
@@ -54,7 +54,7 @@ export default function Auth() {
           />
         </label>
         <label className="auth__field">
-          <span>Password</span>
+          <span>Passwort</span>
           <input
             type="password"
             value={password}
@@ -70,7 +70,7 @@ export default function Auth() {
         {notice && <p className="auth__notice">{notice}</p>}
 
         <button className="btn auth__submit" type="submit" disabled={busy}>
-          {busy ? "…" : mode === "signup" ? "Create account" : "Sign in"}
+          {busy ? "…" : mode === "signup" ? "Konto erstellen" : "Anmelden"}
         </button>
       </form>
 
@@ -82,7 +82,7 @@ export default function Auth() {
           setNotice(null);
         }}
       >
-        {mode === "signup" ? "Have an account? Sign in" : "New here? Create an account"}
+        {mode === "signup" ? "Du hast schon ein Konto? Anmelden" : "Neu hier? Konto erstellen"}
       </button>
     </div>
   );

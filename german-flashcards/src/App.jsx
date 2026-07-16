@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Flashcard from "./components/Flashcard.jsx";
 import Auth from "./components/Auth.jsx";
 import DeckEditor from "./components/DeckEditor.jsx";
@@ -53,7 +53,8 @@ export default function App() {
   const [revealed, setRevealed] = useState(false);
   const [aGrade, setAGrade] = useState(null);
   const [mGrade, setMGrade] = useState(null);
-  const [activeAxis, setActiveAxis] = useState("article");
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const cardShownAt = useRef(Date.now());
   const [stat, setStat] = useState({ done: 0, artMissed: 0, meaMissed: 0 });
   const [view, setView] = useState("review"); // "review" | "deck" | "stats"
 
@@ -71,7 +72,7 @@ export default function App() {
         setQueue(buildQueue(c, { newPerDay: NEW_PER_DAY }));
         setPos(0);
       } catch (e) {
-        if (alive) setLoadError(e.message || "Could not load your deck.");
+        if (alive) setLoadError(e.message || "Dein Stapel konnte nicht geladen werden.");
       }
     })();
     return () => {
@@ -82,7 +83,14 @@ export default function App() {
   const current = queue[pos];
   const finished = pos >= queue.length;
 
-  const reveal = useCallback(() => setRevealed((r) => r || true), []);
+  useEffect(() => {
+    if (!current) return;
+    cardShownAt.current = Date.now();
+    setRevealed(false);
+    setAGrade(null);
+    setMGrade(null);
+    setSelectedArticle(null);
+  }, [current?.id, pos]);
 
   const commit = useCallback(
     (a, m) => {
@@ -102,7 +110,7 @@ export default function App() {
           elapsed_days: rm.log.elapsed_days, stability: rm.item.stability,
           difficulty: rm.item.difficulty, reviewed_at: at },
       ];
-      saveCard(userId, updated, next).catch((e) => setLoadError(e.message || "Couldn't save."));
+      saveCard(userId, updated, next).catch((e) => setLoadError(e.message || "Speichern fehlgeschlagen."));
       saveReviews(userId, rows).catch(() => {});
 
       setStat((s) => ({
@@ -113,25 +121,32 @@ export default function App() {
       setRevealed(false);
       setAGrade(null);
       setMGrade(null);
-      setActiveAxis("article");
+      setSelectedArticle(null);
       setPos((p) => p + 1);
     },
     [cards, current, userId]
   );
 
-  const gradeArticle = useCallback(
-    (g) => {
-      setAGrade(g);
-      setActiveAxis("meaning");
-      if (mGrade != null) commit(g, mGrade);
+  const chooseArticle = useCallback(
+    (article) => {
+      if (revealed || !current) return;
+      const correct = article === current.gender;
+      const elapsed = Date.now() - cardShownAt.current;
+      const grade = !correct
+        ? RATING.MISSED
+        : elapsed <= 3000
+          ? RATING.EASY
+          : RATING.GOT;
+      setSelectedArticle(article);
+      setAGrade(grade);
+      setRevealed(true);
     },
-    [mGrade, commit]
+    [current, revealed]
   );
   const gradeMeaning = useCallback(
     (g) => {
       setMGrade(g);
       if (aGrade != null) commit(aGrade, g);
-      else setActiveAxis("article");
     },
     [aGrade, commit]
   );
@@ -141,21 +156,20 @@ export default function App() {
       if (finished || cards === null || view !== "review") return;
       const t = e.target;
       if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
-      if (!revealed && (e.code === "Space" || e.code === "Enter")) {
+      if (!revealed && ["1", "2", "3"].includes(e.key)) {
         e.preventDefault();
-        reveal();
+        chooseArticle({ 1: "der", 2: "die", 3: "das" }[e.key]);
         return;
       }
       if (revealed && ["1", "2", "3"].includes(e.key)) {
         e.preventDefault();
         const r = { 1: RATING.MISSED, 2: RATING.GOT, 3: RATING.EASY }[e.key];
-        if (activeAxis === "article") gradeArticle(r);
-        else gradeMeaning(r);
+        gradeMeaning(r);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [revealed, finished, activeAxis, cards, view, reveal, gradeArticle, gradeMeaning]);
+  }, [revealed, finished, cards, view, chooseArticle, gradeMeaning]);
 
   const stats = useMemo(
     () => (cards ? counts(cards) : { due: 0, fresh: 0, learned: 0, total: 0 }),
@@ -179,7 +193,7 @@ export default function App() {
     setRevealed(false);
     setAGrade(null);
     setMGrade(null);
-    setActiveAxis("article");
+    setSelectedArticle(null);
     setStat({ done: 0, artMissed: 0, meaMissed: 0 });
   }
   async function hardReset() {
@@ -190,7 +204,7 @@ export default function App() {
     setRevealed(false);
     setAGrade(null);
     setMGrade(null);
-    setActiveAxis("article");
+    setSelectedArticle(null);
     setStat({ done: 0, artMissed: 0, meaMissed: 0 });
   }
 
@@ -205,21 +219,21 @@ export default function App() {
     const next = [...cards, card];
     setCards(next);
     setQueue(buildQueue(next, { newPerDay: NEW_PER_DAY }));
-    saveCard(userId, card, next).catch((e) => setLoadError(e.message || "Couldn't add card."));
+    saveCard(userId, card, next).catch((e) => setLoadError(e.message || "Die Karte konnte nicht hinzugefügt werden."));
   }
   function updateCard(id, fields) {
     let changed = null;
     const next = cards.map((c) => (c.id === id ? (changed = { ...c, ...fields }) : c));
     setCards(next);
     setQueue((q) => q.map((c) => (c.id === id ? { ...c, ...fields } : c)));
-    if (changed) saveCard(userId, changed, next).catch((e) => setLoadError(e.message || "Couldn't save."));
+    if (changed) saveCard(userId, changed, next).catch((e) => setLoadError(e.message || "Speichern fehlgeschlagen."));
   }
   function removeCard(id) {
     const next = cards.filter((c) => c.id !== id);
     setCards(next);
     setQueue(buildQueue(next, { newPerDay: NEW_PER_DAY }));
     setPos(0);
-    deleteCard(userId, id, next).catch((e) => setLoadError(e.message || "Couldn't delete."));
+    deleteCard(userId, id, next).catch((e) => setLoadError(e.message || "Löschen fehlgeschlagen."));
   }
 
   async function signOut() {
@@ -231,9 +245,9 @@ export default function App() {
   }
 
   // ---- gates ----
-  if (hasSupabase && !authReady) return <div className="splash">Loading…</div>;
+  if (hasSupabase && !authReady) return <div className="splash">Wird geladen…</div>;
   if (hasSupabase && !session) return <Auth />;
-  if (cards === null) return <div className="splash">{loadError || "Loading your deck…"}</div>;
+  if (cards === null) return <div className="splash">{loadError || "Dein Stapel wird geladen…"}</div>;
 
   const progress = queue.length ? Math.min(pos / queue.length, 1) : 0;
 
@@ -243,13 +257,13 @@ export default function App() {
         <div className="brand">artikel<span className="brand__dot">.</span></div>
         <div className="topbar__right">
           <div className="topbar__stats">
-            <span><b>{stats.due}</b> due</span>
-            <span><b>{stats.fresh}</b> new</span>
-            <span><b>{stats.learned}</b> learned</span>
+            <span><b>{stats.due}</b> fällig</span>
+            <span><b>{stats.fresh}</b> neu</span>
+            <span><b>{stats.learned}</b> gelernt</span>
           </div>
-          <button className={"navlink" + (view === "stats" ? " navlink--on" : "")} onClick={() => setView(view === "stats" ? "review" : "stats")}>Stats</button>
-          <button className={"navlink" + (view === "deck" ? " navlink--on" : "")} onClick={() => setView(view === "deck" ? "review" : "deck")}>Deck</button>
-          {hasSupabase && <button className="signout" onClick={signOut} title="Sign out">⏻</button>}
+          <button className={"navlink" + (view === "stats" ? " navlink--on" : "")} onClick={() => setView(view === "stats" ? "review" : "stats")}>Statistik</button>
+          <button className={"navlink" + (view === "deck" ? " navlink--on" : "")} onClick={() => setView(view === "deck" ? "review" : "deck")}>Stapel</button>
+          {hasSupabase && <button className="signout" onClick={signOut} title="Abmelden">⏻</button>}
         </div>
       </header>
 
@@ -270,39 +284,37 @@ export default function App() {
               key={current.id + pos}
               card={current}
               revealed={revealed}
-              onReveal={reveal}
-              aGrade={aGrade}
+              selectedArticle={selectedArticle}
               mGrade={mGrade}
-              activeAxis={activeAxis}
-              onGradeArticle={gradeArticle}
+              onChooseArticle={chooseArticle}
               onGradeMeaning={gradeMeaning}
             />
           ) : (
             <div className="done">
               <h2>Fertig f&uuml;r jetzt.</h2>
               <p className="done__line">
-                {stat.done} cards reviewed
+                {stat.done} Karten wiederholt
                 {stat.done > 0 && (
                   <>
                     {" \u2014 "}
-                    {stat.artMissed} article{stat.artMissed === 1 ? "" : "s"} missed,{" "}
-                    {stat.meaMissed} meaning{stat.meaMissed === 1 ? "" : "s"} missed
+                    {stat.artMissed} Artikel nicht gewusst,{" "}
+                    {stat.meaMissed} Bedeutungen nicht gewusst
                   </>
                 )}
                 .
               </p>
-              {nextDueLabel && <p className="done__next">Next cards due in about {nextDueLabel}.</p>}
+              {nextDueLabel && <p className="done__next">Die nächsten Karten sind in etwa {nextDueLabel} fällig.</p>}
               <div className="done__actions">
-                {ahead.length > 0 && <button className="btn" onClick={reviewAhead}>Review ahead ({ahead.length})</button>}
-                <button className="btn btn--ghost" onClick={rebuild}>Rebuild queue</button>
-                <button className="btn btn--ghost" onClick={hardReset}>Reset progress</button>
+                {ahead.length > 0 && <button className="btn" onClick={reviewAhead}>Vorab wiederholen ({ahead.length})</button>}
+                <button className="btn btn--ghost" onClick={rebuild}>Warteschlange neu aufbauen</button>
+                <button className="btn btn--ghost" onClick={hardReset}>Fortschritt zurücksetzen</button>
               </div>
             </div>
           )}
         </main>
       )}
 
-      <footer className="footer"><span>der = blue &middot; die = rose &middot; das = mint</span></footer>
+      <footer className="footer"><span>der = blau &middot; die = rosa &middot; das = mint</span></footer>
     </div>
   );
 }
