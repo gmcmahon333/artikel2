@@ -9,6 +9,7 @@ const CASES = [
 ];
 
 const CASE_LABELS = Object.fromEntries(CASES.map((item) => [item.value, item.label]));
+const KEY_RATINGS = { "1": RATING.MISSED, "2": RATING.GOT, "3": RATING.EASY };
 
 export default function CaseFlashcard({ example, onComplete }) {
   const [answer, setAnswer] = useState(null);
@@ -41,13 +42,21 @@ export default function CaseFlashcard({ example, onComplete }) {
 
   useEffect(() => {
     function onKey(event) {
-      if (answer || !["1", "2", "3"].includes(event.key)) return;
-      const option = CASES[Number(event.key) - 1];
-      chooseCase(option.value);
+      const target = event.target;
+      if (target && (target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "TEXTAREA")) return;
+      if (!KEY_RATINGS[event.key] || meaningGrade !== null) return;
+      event.preventDefault();
+      if (!answer) {
+        chooseCase(CASES[Number(event.key) - 1].value);
+        return;
+      }
+      const value = KEY_RATINGS[event.key];
+      setMeaningGrade(value);
+      onComplete(grade, value);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [answer]);
+  }, [answer, grade, meaningGrade, onComplete]);
 
   return (
     <div
