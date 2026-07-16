@@ -164,6 +164,7 @@ export const CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType, cases]) => 
       translation: record.translation,
       trigger: record.trigger,
       cefr: word.cefr,
+      frequencyRank: word.frequencyRank,
       status: record.status || "candidate",
       reviewer: record.reviewer || null,
       reviewedAt: record.reviewedAt || null,

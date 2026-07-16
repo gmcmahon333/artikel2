@@ -88,6 +88,20 @@ export function itemCounts(entries) {
   };
 }
 
+export function buildItemAheadQueue(entries, { limit = 20, now = Date.now() } = {}) {
+  return entries
+    .filter((entry) => {
+      const seen = !isNew(entry.schedule) || (entry.meaningSchedule && !isNew(entry.meaningSchedule));
+      return seen && !itemDue(entry, now);
+    })
+    .sort((a, b) => {
+      const aDue = Math.min(dueMs(a.schedule), a.meaningSchedule ? dueMs(a.meaningSchedule) : Infinity);
+      const bDue = Math.min(dueMs(b.schedule), b.meaningSchedule ? dueMs(b.meaningSchedule) : Infinity);
+      return aDue - bDue;
+    })
+    .slice(0, limit);
+}
+
 // Deck-state counts for the header.
 export function counts(cards) {
   return {

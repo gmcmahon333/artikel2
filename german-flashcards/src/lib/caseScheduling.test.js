@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildItemQueue, freshItem, itemCounts, RATING, review } from "./engine.js";
+import { buildItemAheadQueue, buildItemQueue, freshItem, itemCounts, RATING, review } from "./engine.js";
 
 function entry(id, schedule) {
   return { id, schedule };
@@ -37,4 +37,15 @@ test("case and translation tracks are independently scheduled", () => {
   };
   assert.notDeepEqual(reviewed.schedule, reviewed.meaningSchedule);
   assert.equal(buildItemQueue([reviewed], { now: now + 864e5 }).length, 1);
+});
+
+test("review ahead returns upcoming learned grammar cards", () => {
+  const now = Date.now();
+  const learned = {
+    id: "learned",
+    schedule: review(freshItem(now), RATING.EASY, now).item,
+    meaningSchedule: review(freshItem(now), RATING.EASY, now).item,
+  };
+  const fresh = { id: "fresh", schedule: freshItem(now), meaningSchedule: freshItem(now) };
+  assert.deepEqual(buildItemAheadQueue([fresh, learned], { now }).map((item) => item.id), ["learned"]);
 });

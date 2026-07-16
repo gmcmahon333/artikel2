@@ -3,8 +3,29 @@ import { loadSeed, seedCardId } from "./deck.js";
 const CASES = ["nominative", "dative", "accusative"];
 const words = new Map(loadSeed().map((word) => [word.noun, word]));
 
+const GOVERNOR_PRIORITY = {
+  sein: { cefr: "A1", frequencyRank: 1 },
+  mit: { cefr: "A1", frequencyRank: 2 },
+  für: { cefr: "A1", frequencyRank: 3 },
+  aus: { cefr: "A1", frequencyRank: 4 },
+  nach: { cefr: "A1", frequencyRank: 5 },
+  bei: { cefr: "A1", frequencyRank: 6 },
+  fragen: { cefr: "A1", frequencyRank: 7 },
+  brauchen: { cefr: "A1", frequencyRank: 8 },
+  helfen: { cefr: "A1", frequencyRank: 9 },
+  werden: { cefr: "A1", frequencyRank: 10 },
+  bleiben: { cefr: "A1", frequencyRank: 11 },
+  ohne: { cefr: "A1", frequencyRank: 12 },
+  danken: { cefr: "A1", frequencyRank: 13 },
+  besuchen: { cefr: "A1", frequencyRank: 14 },
+  durch: { cefr: "A2", frequencyRank: 15 },
+  folgen: { cefr: "B1", frequencyRank: 16 },
+  begegnen: { cefr: "B1", frequencyRank: 17 },
+};
+
 function example(id, noun, grammaticalCase, before, after, translation, governor, ruleType) {
   const word = words.get(noun);
+  const priority = GOVERNOR_PRIORITY[governor];
   if (!word) throw new Error(`Grammar example references unknown noun: ${noun}`);
   return {
     id: `rule-${id}`,
@@ -20,6 +41,8 @@ function example(id, noun, grammaticalCase, before, after, translation, governor
     trigger: `${governor} verlangt ${grammaticalCase === "dative" ? "den Dativ" : grammaticalCase === "accusative" ? "den Akkusativ" : "den Nominativ"}`,
     governor,
     ruleType,
+    cefr: priority.cefr,
+    frequencyRank: priority.frequencyRank,
     status: "candidate",
   };
 }

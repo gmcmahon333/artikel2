@@ -8,6 +8,7 @@ import CaseFlashcard from "./components/CaseFlashcard.jsx";
 import RuleFlashcard from "./components/RuleFlashcard.jsx";
 import { CASE_EXAMPLES } from "./lib/caseExamples.js";
 import { GOVERNED_EXAMPLES } from "./lib/governedExamples.js";
+import { orderCaseCards, orderRuleCards } from "./lib/learningOrder.js";
 import { supabase, hasSupabase } from "./lib/supabaseClient.js";
 import {
   loadCards,
@@ -32,6 +33,7 @@ import {
   RATING,
   buildItemQueue,
   itemCounts,
+  buildItemAheadQueue,
 } from "./lib/engine.js";
 
 const NEW_PER_DAY = 15;
@@ -105,8 +107,8 @@ export default function App() {
         setCards(c);
         setQueue(buildQueue(c, { newPerDay: NEW_PER_DAY }));
         setCaseCards(loadedCaseCards);
-        setCaseQueue(buildItemQueue(loadedCaseCards.filter((card) => CASE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
-        setRuleQueue(buildItemQueue(loadedCaseCards.filter((card) => RULE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
+        setCaseQueue(buildItemQueue(orderCaseCards(loadedCaseCards.filter((card) => CASE_IDS.has(card.id)), CASE_EXAMPLES), { newPerDay: NEW_PER_DAY }));
+        setRuleQueue(buildItemQueue(orderRuleCards(loadedCaseCards.filter((card) => RULE_IDS.has(card.id)), GOVERNED_EXAMPLES), { newPerDay: NEW_PER_DAY }));
         setPos(0);
       } catch (e) {
         if (alive) setLoadError(e.message || "Dein Stapel konnte nicht geladen werden.");
@@ -296,6 +298,40 @@ export default function App() {
     () => caseCards ? itemCounts(caseCards.filter((card) => RULE_IDS.has(card.id))) : { due: 0, fresh: 0, learned: 0, total: 0 },
     [caseCards]
   );
+  const caseAhead = useMemo(
+    () => caseCards ? buildItemAheadQueue(caseCards.filter((card) => CASE_IDS.has(card.id))) : [],
+    [caseCards]
+  );
+  const ruleAhead = useMemo(
+    () => caseCards ? buildItemAheadQueue(caseCards.filter((card) => RULE_IDS.has(card.id))) : [],
+    [caseCards]
+  );
+
+  function rebuildGrammarQueue(mode) {
+    const ids = mode === "rules" ? RULE_IDS : CASE_IDS;
+    const pool = caseCards.filter((card) => ids.has(card.id));
+    const ordered = mode === "rules"
+      ? orderRuleCards(pool, GOVERNED_EXAMPLES)
+      : orderCaseCards(pool, CASE_EXAMPLES);
+    const nextQueue = buildItemQueue(ordered, { newPerDay: NEW_PER_DAY });
+    if (mode === "rules") {
+      setRuleQueue(nextQueue);
+      setRulePos(0);
+    } else {
+      setCaseQueue(nextQueue);
+      setCasePos(0);
+    }
+  }
+
+  function reviewGrammarAhead(mode) {
+    if (mode === "rules") {
+      setRuleQueue(ruleAhead);
+      setRulePos(0);
+    } else {
+      setCaseQueue(caseAhead);
+      setCasePos(0);
+    }
+  }
 
   function rebuild() {
     setQueue(buildQueue(cards, { newPerDay: NEW_PER_DAY }));
@@ -318,8 +354,8 @@ export default function App() {
     setQueue(buildQueue(fresh, { newPerDay: NEW_PER_DAY }));
     setPos(0);
     setCaseCards(freshCaseCards);
-    setCaseQueue(buildItemQueue(freshCaseCards.filter((card) => CASE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
-    setRuleQueue(buildItemQueue(freshCaseCards.filter((card) => RULE_IDS.has(card.id)), { newPerDay: NEW_PER_DAY }));
+    setCaseQueue(buildItemQueue(orderCaseCards(freshCaseCards.filter((card) => CASE_IDS.has(card.id)), CASE_EXAMPLES), { newPerDay: NEW_PER_DAY }));
+    setRuleQueue(buildItemQueue(orderRuleCards(freshCaseCards.filter((card) => RULE_IDS.has(card.id)), GOVERNED_EXAMPLES), { newPerDay: NEW_PER_DAY }));
     setCasePos(0);
     setRulePos(0);
     setRevealed(false);
@@ -440,10 +476,9 @@ export default function App() {
               <h2>Fertig f&uuml;r jetzt.</h2>
               <p className="done__line">Alle fälligen Fallbeispiele wurden wiederholt.</p>
               <div className="done__actions">
-                <button className="btn btn--ghost" onClick={() => {
-                  setCaseQueue(buildItemQueue(caseCards, { newPerDay: NEW_PER_DAY }));
-                  setCasePos(0);
-                }}>Warteschlange neu aufbauen</button>
+                {caseAhead.length > 0 && <button className="btn" onClick={() => reviewGrammarAhead("case")}>Vorab wiederholen ({caseAhead.length})</button>}
+                <button className="btn btn--ghost" onClick={() => rebuildGrammarQueue("case")}>Warteschlange neu aufbauen</button>
+                <button className="btn btn--ghost" onClick={hardReset}>Fortschritt zurücksetzen</button>
               </div>
             </div>
           ) : studyMode === "rules" && !rulesFinished && currentRuleExample ? (
@@ -456,6 +491,11 @@ export default function App() {
             <div className="done">
               <h2>Fertig f&uuml;r jetzt.</h2>
               <p className="done__line">Alle fälligen Regelkarten wurden wiederholt.</p>
+              <div className="done__actions">
+                {ruleAhead.length > 0 && <button className="btn" onClick={() => reviewGrammarAhead("rules")}>Vorab wiederholen ({ruleAhead.length})</button>}
+                <button className="btn btn--ghost" onClick={() => rebuildGrammarQueue("rules")}>Warteschlange neu aufbauen</button>
+                <button className="btn btn--ghost" onClick={hardReset}>Fortschritt zurücksetzen</button>
+              </div>
             </div>
           ) : !finished && current ? (
             <Flashcard
