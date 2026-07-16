@@ -129,10 +129,9 @@ body {
 }
 
 .card__visual {
-  width: 100%;
+  width: min(100%, 400px);
   aspect-ratio: 16 / 10;
-  max-height: 250px;
-  margin: 0 0 22px;
+  margin: 0 auto 22px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -283,7 +282,7 @@ kbd {
 :focus-visible { outline: 2px solid var(--der); outline-offset: 2px; border-radius: 8px; }
 
 @media (max-height: 760px) {
-  .card__visual { max-height: 190px; margin-bottom: 16px; }
+  .card__visual { width: min(100%, 304px); margin-bottom: 16px; }
   .card { padding-top: 24px; }
 }
 
