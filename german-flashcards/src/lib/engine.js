@@ -66,6 +66,28 @@ export function buildAheadQueue(cards, { limit = 20, now = Date.now() } = {}) {
     .slice(0, limit);
 }
 
+export function itemDue(entry, now = Date.now()) {
+  return dueMs(entry.schedule) <= now;
+}
+
+export function buildItemQueue(entries, { newPerDay = 15, now = Date.now() } = {}) {
+  const seen = entries.filter((entry) => !isNew(entry.schedule));
+  const due = seen
+    .filter((entry) => itemDue(entry, now))
+    .sort((a, b) => dueMs(a.schedule) - dueMs(b.schedule));
+  const fresh = entries.filter((entry) => isNew(entry.schedule)).slice(0, newPerDay);
+  return [...due, ...fresh];
+}
+
+export function itemCounts(entries) {
+  return {
+    due: entries.filter((entry) => itemDue(entry) && !isNew(entry.schedule)).length,
+    fresh: entries.filter((entry) => isNew(entry.schedule)).length,
+    learned: entries.filter((entry) => isReview(entry.schedule)).length,
+    total: entries.length,
+  };
+}
+
 // Deck-state counts for the header.
 export function counts(cards) {
   return {

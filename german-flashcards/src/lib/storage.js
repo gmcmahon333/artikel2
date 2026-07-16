@@ -8,10 +8,12 @@
 import { loadSeed, seedAdditionsFor, seedCardId } from "./deck.js";
 import { freshItem } from "./engine.js";
 import { supabase, hasSupabase } from "./supabaseClient.js";
+import { CASE_EXAMPLES } from "./caseExamples.js";
 
 const LOCAL_KEY = "artikel.cards.v1";
 const LOCAL_REVIEWS = "artikel.reviews.v1";
 const LOCAL_PARAMS = "artikel.params.v1";
+const LOCAL_CASE_CARDS = "artikel.caseCards.v1";
 
 // Shared seed builder used by both backends.
 export function buildSeedCards(now = Date.now(), words = loadSeed()) {
@@ -93,6 +95,83 @@ export async function loadCards(userId) {
   } catch {
     return buildSeedCards();
   }
+}
+
+function buildCaseCards(now = Date.now()) {
+  return CASE_EXAMPLES.map((example) => ({
+    id: example.id,
+    nounId: example.nounId,
+    grammaticalCase: example.grammaticalCase,
+    schedule: freshItem(now),
+  }));
+}
+
+function caseRowToCard(row) {
+  return {
+    id: row.id,
+    nounId: row.noun_id,
+    grammaticalCase: row.grammatical_case,
+    schedule: row.schedule_state,
+  };
+}
+
+function caseCardToRow(userId, card) {
+  return {
+    id: card.id,
+    user_id: userId,
+    noun_id: card.nounId,
+    grammatical_case: card.grammaticalCase,
+    schedule_state: card.schedule,
+  };
+}
+
+export async function loadCaseCards(userId) {
+  const seeded = buildCaseCards();
+  if (hasSupabase) {
+    const { data, error } = await supabase.from("case_cards").select("*").eq("user_id", userId);
+    if (error) throw error;
+    const existing = (data || []).map(caseRowToCard);
+    const existingIds = new Set(existing.map((card) => card.id));
+    const additions = seeded.filter((card) => !existingIds.has(card.id));
+    if (additions.length) {
+      const { error: insertError } = await supabase.from("case_cards").insert(
+        additions.map((card) => caseCardToRow(userId, card))
+      );
+      if (insertError) throw insertError;
+    }
+    return [...existing, ...additions];
+  }
+  try {
+    const raw = localStorage.getItem(LOCAL_CASE_CARDS);
+    const existing = raw ? JSON.parse(raw) : [];
+    const existingIds = new Set(existing.map((card) => card.id));
+    const merged = [...existing, ...seeded.filter((card) => !existingIds.has(card.id))];
+    localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(merged));
+    return merged;
+  } catch {
+    return seeded;
+  }
+}
+
+export async function saveCaseCard(userId, card, allCards) {
+  if (hasSupabase) {
+    const { error } = await supabase
+      .from("case_cards")
+      .upsert(caseCardToRow(userId, card), { onConflict: "user_id,id" });
+    if (error) throw error;
+    return;
+  }
+  localStorage.setItem(LOCAL_CASE_CARDS, JSON.stringify(allCards));
+}
+
+export async function resetCaseCards(userId) {
+  if (hasSupabase) {
+    const { error } = await supabase.from("case_cards").delete().eq("user_id", userId);
+    if (error) throw error;
+  } else {
+    localStorage.removeItem(LOCAL_CASE_CARDS);
+  }
+  return loadCaseCards(userId);
 }
 
 // Persist one card (called after each grade). For local we rewrite the whole set.

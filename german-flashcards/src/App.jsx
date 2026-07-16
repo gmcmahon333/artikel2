@@ -3,6 +3,9 @@ import Flashcard from "./components/Flashcard.jsx";
 import Auth from "./components/Auth.jsx";
 import DeckEditor from "./components/DeckEditor.jsx";
 import Stats from "./components/Stats.jsx";
+import StudyModeSwitch from "./components/StudyModeSwitch.jsx";
+import CaseFlashcard from "./components/CaseFlashcard.jsx";
+import { CASE_EXAMPLES } from "./lib/caseExamples.js";
 import { supabase, hasSupabase } from "./lib/supabaseClient.js";
 import {
   loadCards,
@@ -11,6 +14,9 @@ import {
   resetAll,
   saveReviews,
   loadParams,
+  loadCaseCards,
+  saveCaseCard,
+  resetCaseCards,
 } from "./lib/storage.js";
 import {
   review,
@@ -22,6 +28,8 @@ import {
   freshItem,
   setUserParams,
   RATING,
+  buildItemQueue,
+  itemCounts,
 } from "./lib/engine.js";
 
 const NEW_PER_DAY = 15;
@@ -49,6 +57,8 @@ export default function App() {
   const [queue, setQueue] = useState([]);
   const [pos, setPos] = useState(0);
   const [loadError, setLoadError] = useState(null);
+  const [caseCards, setCaseCards] = useState(null);
+  const [caseQueue, setCaseQueue] = useState([]);
 
   const [revealed, setRevealed] = useState(false);
   const [aGrade, setAGrade] = useState(null);
@@ -58,6 +68,20 @@ export default function App() {
   const cardShownAt = useRef(Date.now());
   const [stat, setStat] = useState({ done: 0, artMissed: 0, meaMissed: 0 });
   const [view, setView] = useState("review"); // "review" | "deck" | "stats"
+  const [studyMode, setStudyMode] = useState(() => {
+    try {
+      return localStorage.getItem("artikel.studyMode.v1") || "article";
+    } catch {
+      return "article";
+    }
+  });
+  const [casePos, setCasePos] = useState(0);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("artikel.studyMode.v1", studyMode);
+    } catch {}
+  }, [studyMode]);
 
   // Load learned weights (if any), then the deck.
   useEffect(() => {
@@ -67,10 +91,15 @@ export default function App() {
       try {
         const w = await loadParams(userId);
         setUserParams(w); // defaults if null
-        const c = await loadCards(userId);
+        const [c, loadedCaseCards] = await Promise.all([
+          loadCards(userId),
+          loadCaseCards(userId),
+        ]);
         if (!alive) return;
         setCards(c);
         setQueue(buildQueue(c, { newPerDay: NEW_PER_DAY }));
+        setCaseCards(loadedCaseCards);
+        setCaseQueue(buildItemQueue(loadedCaseCards, { newPerDay: NEW_PER_DAY }));
         setPos(0);
       } catch (e) {
         if (alive) setLoadError(e.message || "Dein Stapel konnte nicht geladen werden.");
@@ -83,6 +112,8 @@ export default function App() {
 
   const current = queue[pos];
   const finished = pos >= queue.length;
+  const currentCaseCard = caseQueue[casePos];
+  const caseFinished = casePos >= caseQueue.length;
 
   useEffect(() => {
     if (!current) return;
@@ -160,9 +191,35 @@ export default function App() {
     [aGrade, commit]
   );
 
+  const completeCase = useCallback(
+    (rating) => {
+      if (!currentCaseCard || rating == null) return;
+      const now = Date.now();
+      const result = review(currentCaseCard.schedule, rating, now);
+      const updated = { ...currentCaseCard, schedule: result.item };
+      const next = caseCards.map((card) => card.id === updated.id ? updated : card);
+      setCaseCards(next);
+      saveCaseCard(userId, updated, next).catch((error) =>
+        setLoadError(error.message || "Der Fortschritt konnte nicht gespeichert werden.")
+      );
+      saveReviews(userId, [{
+        card_id: updated.id,
+        track: "case",
+        rating,
+        state: result.log.state,
+        elapsed_days: result.log.elapsed_days,
+        stability: result.item.stability,
+        difficulty: result.item.difficulty,
+        reviewed_at: new Date(now).toISOString(),
+      }]).catch(() => {});
+      setCasePos((position) => position + 1);
+    },
+    [caseCards, currentCaseCard, userId]
+  );
+
   useEffect(() => {
     function onKey(e) {
-      if (finished || cards === null || view !== "review") return;
+      if (finished || cards === null || view !== "review" || studyMode !== "article") return;
       const t = e.target;
       if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
       if (!revealed && ["1", "2", "3"].includes(e.key)) {
@@ -178,7 +235,7 @@ export default function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [revealed, finished, cards, view, chooseArticle, gradeMeaning]);
+  }, [revealed, finished, cards, view, studyMode, chooseArticle, gradeMeaning]);
 
   const stats = useMemo(
     () => (cards ? counts(cards) : { due: 0, fresh: 0, learned: 0, total: 0 }),
@@ -190,6 +247,10 @@ export default function App() {
     return humanInterval(Math.max(0, Math.ceil((soonest - Date.now()) / DAY)));
   }, [cards]);
   const ahead = useMemo(() => (cards ? buildAheadQueue(cards) : []), [cards]);
+  const caseStats = useMemo(
+    () => caseCards ? itemCounts(caseCards) : { due: 0, fresh: 0, learned: 0, total: 0 },
+    [caseCards]
+  );
 
   function rebuild() {
     setQueue(buildQueue(cards, { newPerDay: NEW_PER_DAY }));
@@ -207,10 +268,13 @@ export default function App() {
     setStat({ done: 0, artMissed: 0, meaMissed: 0 });
   }
   async function hardReset() {
-    const fresh = await resetAll(userId);
+    const [fresh, freshCaseCards] = await Promise.all([resetAll(userId), resetCaseCards(userId)]);
     setCards(fresh);
     setQueue(buildQueue(fresh, { newPerDay: NEW_PER_DAY }));
     setPos(0);
+    setCaseCards(freshCaseCards);
+    setCaseQueue(buildItemQueue(freshCaseCards, { newPerDay: NEW_PER_DAY }));
+    setCasePos(0);
     setRevealed(false);
     setAGrade(null);
     setMGrade(null);
@@ -251,6 +315,8 @@ export default function App() {
     await supabase.auth.signOut();
     setCards(null);
     setQueue([]);
+    setCaseCards(null);
+    setCaseQueue([]);
     setPos(0);
     setView("review");
   }
@@ -258,9 +324,16 @@ export default function App() {
   // ---- gates ----
   if (hasSupabase && !authReady) return <div className="splash">Wird geladen…</div>;
   if (hasSupabase && !session) return <Auth />;
-  if (cards === null) return <div className="splash">{loadError || "Dein Stapel wird geladen…"}</div>;
+  if (cards === null || caseCards === null) return <div className="splash">{loadError || "Dein Stapel wird geladen…"}</div>;
 
-  const progress = queue.length ? Math.min(pos / queue.length, 1) : 0;
+  const progress = studyMode === "case"
+    ? caseQueue.length ? Math.min(casePos / caseQueue.length, 1) : 0
+    : queue.length
+      ? Math.min(pos / queue.length, 1)
+      : 0;
+  const currentCaseExample = currentCaseCard
+    ? CASE_EXAMPLES.find((example) => example.id === currentCaseCard.id)
+    : null;
 
   return (
     <div className="app">
@@ -268,9 +341,19 @@ export default function App() {
         <div className="brand">artikel<span className="brand__dot">.</span></div>
         <div className="topbar__right">
           <div className="topbar__stats">
-            <span><b>{stats.due}</b> fällig</span>
-            <span><b>{stats.fresh}</b> neu</span>
-            <span><b>{stats.learned}</b> gelernt</span>
+            {studyMode === "case" ? (
+              <>
+                <span><b>{caseStats.due}</b> fällig</span>
+                <span><b>{caseStats.fresh}</b> neu</span>
+                <span><b>{caseStats.learned}</b> gelernt</span>
+              </>
+            ) : (
+              <>
+                <span><b>{stats.due}</b> fällig</span>
+                <span><b>{stats.fresh}</b> neu</span>
+                <span><b>{stats.learned}</b> gelernt</span>
+              </>
+            )}
           </div>
           <button className={"navlink" + (view === "stats" ? " navlink--on" : "")} onClick={() => setView(view === "stats" ? "review" : "stats")}>Statistik</button>
           <button className={"navlink" + (view === "deck" ? " navlink--on" : "")} onClick={() => setView(view === "deck" ? "review" : "deck")}>Stapel</button>
@@ -279,9 +362,12 @@ export default function App() {
       </header>
 
       {view === "review" && (
-        <div className="progress" aria-hidden="true">
-          <div className="progress__fill" style={{ transform: `scaleX(${progress})` }} />
-        </div>
+        <>
+          <StudyModeSwitch value={studyMode} onChange={setStudyMode} />
+          <div className="progress" aria-hidden="true">
+            <div className="progress__fill" style={{ transform: `scaleX(${progress})` }} />
+          </div>
+        </>
       )}
 
       {view === "deck" ? (
@@ -290,7 +376,24 @@ export default function App() {
         <Stats userId={userId} cards={cards} onClose={() => setView("review")} />
       ) : (
         <main className="stage">
-          {!finished && current ? (
+          {studyMode === "case" && !caseFinished && currentCaseExample ? (
+            <CaseFlashcard
+              key={currentCaseExample.id}
+              example={currentCaseExample}
+              onComplete={completeCase}
+            />
+          ) : studyMode === "case" ? (
+            <div className="done">
+              <h2>Fertig f&uuml;r jetzt.</h2>
+              <p className="done__line">Alle fälligen Fallbeispiele wurden wiederholt.</p>
+              <div className="done__actions">
+                <button className="btn btn--ghost" onClick={() => {
+                  setCaseQueue(buildItemQueue(caseCards, { newPerDay: NEW_PER_DAY }));
+                  setCasePos(0);
+                }}>Warteschlange neu aufbauen</button>
+              </div>
+            </div>
+          ) : !finished && current ? (
             <Flashcard
               key={current.id + pos}
               card={current}
@@ -326,7 +429,13 @@ export default function App() {
         </main>
       )}
 
-      <footer className="footer"><span>der = blau &middot; die = orange &middot; das = mint</span></footer>
+      <footer className="footer">
+        <span>
+          {studyMode === "case"
+            ? <>Nominativ = blau &middot; Dativ = orange &middot; Akkusativ = mint</>
+            : <>der = blau &middot; die = orange &middot; das = mint</>}
+        </span>
+      </footer>
     </div>
   );
 }
