@@ -270,15 +270,10 @@ export default function App() {
         chooseArticle({ 1: "der", 2: "die", 3: "das" }[e.key]);
         return;
       }
-      if (revealed && ["1", "2", "3"].includes(e.key)) {
-        e.preventDefault();
-        const r = { 1: RATING.MISSED, 2: RATING.GOT, 3: RATING.EASY }[e.key];
-        gradeMeaning(r);
-      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [revealed, finished, cards, view, studyMode, chooseArticle, gradeMeaning]);
+  }, [revealed, finished, cards, view, studyMode, chooseArticle]);
 
   const stats = useMemo(
     () => (cards ? counts(cards) : { due: 0, fresh: 0, learned: 0, total: 0 }),

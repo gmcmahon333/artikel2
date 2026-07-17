@@ -10,7 +10,6 @@ const CASES = [
 
 const LABELS = Object.fromEntries(CASES.map((item) => [item.value, item.label]));
 const TYPE_LABELS = { verb: "Verb", preposition: "Präposition", copula: "Kopulaverb" };
-const KEY_RATINGS = { "1": RATING.MISSED, "2": RATING.GOT, "3": RATING.EASY };
 
 export default function RuleFlashcard({ example, onComplete }) {
   const [answer, setAnswer] = useState(null);
@@ -45,19 +44,13 @@ export default function RuleFlashcard({ example, onComplete }) {
     function onKey(event) {
       const target = event.target;
       if (target && (target.tagName === "INPUT" || target.tagName === "SELECT" || target.tagName === "TEXTAREA")) return;
-      if (!KEY_RATINGS[event.key] || meaningGrade !== null) return;
+      if (answer || !["1", "2", "3"].includes(event.key)) return;
       event.preventDefault();
-      if (!answer) {
-        choose(CASES[Number(event.key) - 1].value);
-        return;
-      }
-      const value = KEY_RATINGS[event.key];
-      setMeaningGrade(value);
-      onComplete(grade, value);
+      choose(CASES[Number(event.key) - 1].value);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [answer, grade, meaningGrade, onComplete]);
+  }, [answer]);
 
   return (
     <div
