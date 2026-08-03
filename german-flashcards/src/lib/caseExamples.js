@@ -154,7 +154,7 @@ const CORE_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType, cases]) => {
       forms: Object.fromEntries(
         PRACTICED_CASES.map((caseName) => [caseName, word[caseName]])
       ),
-      number: "singular",
+      number: word.number || "singular",
       determiner: "definite",
       semanticType,
       before: record.before,
@@ -199,7 +199,7 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
       version: CASE_EXAMPLE_VERSION,
       nounId: seedCardId(word), noun, grammaticalCase,
       forms: Object.fromEntries(PRACTICED_CASES.map((caseName) => [caseName, word[caseName]])),
-      number: "singular", determiner: "definite", semanticType,
+      number: word.number || "singular", determiner: "definite", semanticType,
       before: frame.before, target, after: frame.after,
       sentence: `${frame.before}${target}${frame.after}`,
       translation: frame.translation(gloss), trigger: frame.trigger,
@@ -244,7 +244,7 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
         noun: word.noun,
         grammaticalCase,
         forms: Object.fromEntries(PRACTICED_CASES.map((caseName) => [caseName, word[caseName]])),
-        number: "singular",
+        number: word.number || "singular",
         determiner: "definite",
         semanticType: "general",
         before: frame.before,
@@ -327,7 +327,7 @@ export function validateCaseExamples(
     if (example.noun !== word.noun || example.cefr !== word.cefr) {
       errors.push(`${label}: duplicated noun metadata does not match the deck`);
     }
-    if (example.version !== CASE_EXAMPLE_VERSION || example.number !== "singular" || example.determiner !== "definite") {
+    if (example.version !== CASE_EXAMPLE_VERSION || example.number !== (word.number || "singular") || example.determiner !== "definite") {
       errors.push(`${label}: unsupported schema version or morphology scope`);
     }
 

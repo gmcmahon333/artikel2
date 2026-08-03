@@ -214,6 +214,15 @@ body {
   line-height: 1.04;
   letter-spacing: -0.025em;
 }
+.card__noun--long {
+  font-size: clamp(1.65rem, 6.5vw, 2.8rem);
+  overflow-wrap: anywhere;
+}
+.card__noun--very-long {
+  font-size: clamp(1.35rem, 5.5vw, 2.25rem);
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
 .card__article {
   color: var(--g);
   transition: color 0.4s ease;

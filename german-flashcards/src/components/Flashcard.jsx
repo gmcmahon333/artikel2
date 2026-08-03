@@ -15,6 +15,11 @@ export default function Flashcard({
 }) {
   const imageUrl = nounImageUrl(card);
   const [imageFailed, setImageFailed] = useState(false);
+  const nounLengthClass = card.noun.length >= 20
+    ? " card__noun--very-long"
+    : card.noun.length >= 15
+      ? " card__noun--long"
+      : "";
 
   return (
     <div
@@ -47,7 +52,7 @@ export default function Flashcard({
           </div>
         )}
 
-        <h1 className="card__noun">
+        <h1 className={`card__noun${nounLengthClass}`}>
           {revealed && <span className="card__article">{ARTICLE_LABEL[card.gender]} </span>}
           {card.noun}
         </h1>

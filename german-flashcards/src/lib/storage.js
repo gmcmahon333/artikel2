@@ -32,6 +32,19 @@ function buildSeedAdditions(cards, now = Date.now()) {
   return buildSeedCards(now, seedAdditionsFor(cards));
 }
 
+function refreshSeedMetadata(cards) {
+  const seedById = new Map(loadSeed().map((word) => [seedCardId(word), word]));
+  return cards.map((card) => {
+    const word = seedById.get(card.id);
+    if (!word) return card;
+    return { ...card, noun: word.noun, gender: word.gender, en: word.en };
+  });
+}
+
+function metadataChanged(before, after) {
+  return before.noun !== after.noun || before.gender !== after.gender || before.en !== after.en;
+}
+
 // ---- Supabase row <-> app card ----
 function rowToCard(row) {
   return {
@@ -69,7 +82,16 @@ export async function loadCards(userId) {
       if (insErr) throw insErr;
       return seeded;
     }
-    const existing = data.map(rowToCard);
+    const loaded = data.map(rowToCard);
+    const existing = refreshSeedMetadata(loaded);
+    const refreshed = existing.filter((card, index) => metadataChanged(loaded[index], card));
+    if (refreshed.length) {
+      const { error: updateError } = await supabase.from("cards").upsert(
+        refreshed.map((card) => cardToRow(userId, card)),
+        { onConflict: "user_id,id" }
+      );
+      if (updateError) throw updateError;
+    }
     const additions = buildSeedAdditions(existing);
     if (additions.length) {
       const rows = additions.map((c) => cardToRow(userId, c));
@@ -87,9 +109,9 @@ export async function loadCards(userId) {
       localStorage.setItem(LOCAL_KEY, JSON.stringify(seeded));
       return seeded;
     }
-    const existing = JSON.parse(raw);
+    const loaded = JSON.parse(raw);
+    const existing = refreshSeedMetadata(loaded);
     const additions = buildSeedAdditions(existing);
-    if (!additions.length) return existing;
     const merged = [...existing, ...additions];
     localStorage.setItem(LOCAL_KEY, JSON.stringify(merged));
     return merged;
