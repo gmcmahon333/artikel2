@@ -161,9 +161,13 @@ const VERB_NOUNS = {
   schmecken: ["Mann", "Frau", "Paar"],
 };
 
-function expandedVerbFrame(rule, target) {
+function expandedVerbFrame(rule, target, word) {
   const finite = VERB_FORMS[rule.lemma];
   if (rule.lemma === "anrufen") return [`Die Gruppe ruft ${target} an.`, "The group calls the named person."];
+  if (rule.lemma === "finden") {
+    const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
+    return [`Die Gruppe findet ${target}.`, `The group finds the ${gloss}.`];
+  }
   if (rule.lemma === "einfallen") return [`Die Lösung fällt ${target} ein.`, "The solution occurs to the named person."];
   if (rule.lemma === "gelingen") return [`Die Aufgabe gelingt ${target}.`, "The named person succeeds at the task."];
   if (rule.lemma === "genügen") return [`Die Antwort genügt ${target}.`, "The answer is sufficient for the named person."];
@@ -186,7 +190,7 @@ const EXPANDED_GOVERNED_EXAMPLES = [...GRAMMAR_RULE_BY_LEMMA.values()]
       const word = words.get(noun);
       if (!word) throw new Error(`Expanded grammar example references unknown noun: ${noun}`);
       const target = word[rule.grammaticalCase];
-      const [sentence, translation] = spec ? spec.frame(target) : expandedVerbFrame(rule, target);
+      const [sentence, translation] = spec ? spec.frame(target) : expandedVerbFrame(rule, target, word);
       const targetIndex = sentence.indexOf(target);
       if (targetIndex < 0) throw new Error(`Expanded grammar frame omits target: ${rule.lemma}`);
       return example(

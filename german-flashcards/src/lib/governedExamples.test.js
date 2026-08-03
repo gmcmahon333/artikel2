@@ -14,3 +14,10 @@ test("governed-rule candidates cover fixed dative, accusative, and nominative pa
   assert.ok(GOVERNED_EXAMPLES.every((example) => example.sentence === `${example.before}${example.target}${example.after}`));
   assert.ok(GOVERNED_EXAMPLES.every((example) => example.ruleId));
 });
+
+test("finden examples use a direct learner translation", () => {
+  const examples = GOVERNED_EXAMPLES.filter((example) => example.governor === "finden");
+  assert.equal(examples.length, 3);
+  assert.ok(examples.every((example) => example.translation.startsWith("The group finds the ")));
+  assert.ok(examples.every((example) => !example.translation.includes("named object")));
+});

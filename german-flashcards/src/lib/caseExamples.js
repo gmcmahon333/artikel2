@@ -228,6 +228,28 @@ const GENERATED_FRAMES = {
   ],
 };
 
+// Hand-authored replacements for generated frames that are grammatically
+// valid but semantically unnatural with a particular noun. Keys include the
+// generated frame ID so learner scheduling remains unchanged.
+const GENERATED_EXAMPLE_OVERRIDES = {
+  "Dank::dative::generated-01": {
+    before: "Mit ", after: " endet ihre Rede.",
+    translation: "Her speech ends with an expression of gratitude.", trigger: "mit + dative",
+  },
+  "Abend::accusative::generated-02": {
+    before: "Wir genießen ", after: ".",
+    translation: "We enjoy the evening.", trigger: "direct object",
+  },
+  "Straße::dative::generated-02": {
+    before: "Wir folgen ", after: " bis zum Bahnhof.",
+    translation: "We follow the street to the train station.", trigger: "folgen + dative",
+  },
+  "Glück::accusative::generated-01": {
+    before: "Das Gedicht beschreibt ", after: ".",
+    translation: "The poem describes happiness.", trigger: "direct object",
+  },
+};
+
 const pilotNounIds = new Set(PILOT.map(([noun, en]) => seedCardId(seedByKey.get(`${noun}::${en}`))));
 
 const GENERATED_CASE_EXAMPLES = loadSeed()
@@ -236,6 +258,7 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
     const shortCase = { nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase];
     const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
     return GENERATED_FRAMES[grammaticalCase].map((frame) => {
+      const authored = GENERATED_EXAMPLE_OVERRIDES[`${word.noun}::${grammaticalCase}::${frame.key}`] || frame;
       const target = word[grammaticalCase];
       return {
         id: `${seedCardId(word)}-${shortCase}-${frame.key}`,
@@ -247,12 +270,12 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
         number: word.number || "singular",
         determiner: "definite",
         semanticType: "general",
-        before: frame.before,
+        before: authored.before,
         target,
-        after: frame.after,
-        sentence: `${frame.before}${target}${frame.after}`,
-        translation: frame.translation(gloss),
-        trigger: frame.trigger,
+        after: authored.after,
+        sentence: `${authored.before}${target}${authored.after}`,
+        translation: typeof authored.translation === "function" ? authored.translation(gloss) : authored.translation,
+        trigger: authored.trigger,
         cefr: word.cefr,
         frequencyRank: word.frequencyRank,
         status: "candidate",

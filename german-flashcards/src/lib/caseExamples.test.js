@@ -40,6 +40,22 @@ test("case examples match deck morphology and the public content schema", () => 
   assert.deepEqual(verifiedExamplesForNoun(CASE_EXAMPLES[0].nounId), []);
 });
 
+test("noun-specific candidates replace semantically invalid generated frames", () => {
+  const expected = [
+    ["Dank", "dative", "generated-01", "Mit dem Dank endet ihre Rede.", "Her speech ends with an expression of gratitude."],
+    ["Abend", "accusative", "generated-02", "Wir genießen den Abend.", "We enjoy the evening."],
+    ["Straße", "dative", "generated-02", "Wir folgen der Straße bis zum Bahnhof.", "We follow the street to the train station."],
+    ["Glück", "accusative", "generated-01", "Das Gedicht beschreibt das Glück.", "The poem describes happiness."],
+  ];
+
+  for (const [noun, grammaticalCase, idSuffix, sentence, translation] of expected) {
+    const candidate = CASE_EXAMPLES.find((example) =>
+      example.noun === noun && example.grammaticalCase === grammaticalCase && example.id.endsWith(idSuffix)
+    );
+    assert.deepEqual([candidate.sentence, candidate.translation], [sentence, translation]);
+  }
+});
+
 test("validator rejects a target that disagrees with deck morphology", () => {
   const invalid = CASE_EXAMPLES.map((example, index) =>
     index === 0 ? { ...example, target: "dem falschen Wort" } : example

@@ -26,6 +26,7 @@ test("lexicon corrections preserve legacy schedules and morphology", () => {
     moped: ["Kleinkraftrad", "das", "das Kleinkraftrad"],
     hardware: ["Eisenwaren", "die", "die Eisenwaren"],
     truck: ["LKW", "der", "der LKW"],
+    gratitude: ["Dank", "der", "der Dank"],
   };
 
   for (const [english, [noun, gender, nominative]] of Object.entries(expected)) {
