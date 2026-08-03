@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import GradeBar from "./GradeBar.jsx";
 import { nounImageUrl } from "../lib/nounImages.js";
 
@@ -15,11 +15,39 @@ export default function Flashcard({
 }) {
   const imageUrl = nounImageUrl(card);
   const [imageFailed, setImageFailed] = useState(false);
-  const nounLengthClass = card.noun.length >= 20
-    ? " card__noun--very-long"
-    : card.noun.length >= 15
-      ? " card__noun--long"
-      : "";
+  const nounRef = useRef(null);
+  const needsNounFit = card.noun.length > 14;
+
+  useLayoutEffect(() => {
+    const noun = nounRef.current;
+    if (!noun) return undefined;
+    noun.style.fontSize = "";
+    if (!needsNounFit) return undefined;
+
+    let active = true;
+
+    const fitNoun = () => {
+      noun.style.fontSize = "";
+      const availableWidth = noun.clientWidth;
+      const renderedWidth = noun.scrollWidth;
+      if (!availableWidth || renderedWidth <= availableWidth) return;
+
+      const baseSize = Number.parseFloat(window.getComputedStyle(noun).fontSize);
+      const fittedSize = Math.max(18, baseSize * (availableWidth / renderedWidth) * 0.98);
+      noun.style.fontSize = `${fittedSize}px`;
+    };
+
+    fitNoun();
+    const observer = new ResizeObserver(fitNoun);
+    observer.observe(noun.parentElement);
+    document.fonts?.ready.then(() => {
+      if (active) fitNoun();
+    });
+    return () => {
+      active = false;
+      observer.disconnect();
+    };
+  }, [card.noun, needsNounFit, revealed]);
 
   return (
     <div
@@ -52,7 +80,10 @@ export default function Flashcard({
           </div>
         )}
 
-        <h1 className={`card__noun${nounLengthClass}`}>
+        <h1
+          ref={nounRef}
+          className={`card__noun${needsNounFit ? " card__noun--fit" : ""}`}
+        >
           {revealed && <span className="card__article">{ARTICLE_LABEL[card.gender]} </span>}
           {card.noun}
         </h1>
