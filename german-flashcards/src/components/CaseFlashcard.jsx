@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { RATING } from "../lib/engine.js";
 import GradeBar from "./GradeBar.jsx";
 
@@ -9,6 +9,58 @@ const CASES = [
 ];
 
 const CASE_LABELS = Object.fromEntries(CASES.map((item) => [item.value, item.label]));
+
+function CaseOption({ form, option, correct, answer, onChoose }) {
+  const buttonRef = useRef(null);
+  const formRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const button = buttonRef.current;
+    const label = formRef.current;
+    if (!button || !label) return undefined;
+
+    let active = true;
+    const fitLabel = () => {
+      label.style.fontSize = "";
+      const availableWidth = button.clientWidth - 22;
+      const renderedWidth = label.scrollWidth;
+      if (!availableWidth || renderedWidth <= availableWidth) return;
+      const baseSize = Number.parseFloat(window.getComputedStyle(label).fontSize);
+      label.style.fontSize = `${Math.max(10, baseSize * (availableWidth / renderedWidth) * 0.97)}px`;
+    };
+
+    fitLabel();
+    const observer = new ResizeObserver(fitLabel);
+    observer.observe(button);
+    document.fonts?.ready.then(() => {
+      if (active) fitLabel();
+    });
+    return () => {
+      active = false;
+      observer.disconnect();
+    };
+  }, [form]);
+
+  return (
+    <div className="case-choice" data-case={option.value}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={`case-option${correct ? " case-option--correct" : ""}`}
+        data-case={option.value}
+        onClick={() => onChoose(option.value)}
+        disabled={Boolean(answer)}
+        aria-pressed={Boolean(correct)}
+        aria-describedby={`case-label-${option.value}`}
+      >
+        <span ref={formRef} className="case-option__form">{form}</span><kbd>{option.hint}</kbd>
+      </button>
+      <span className="case-choice__label" id={`case-label-${option.value}`}>
+        {option.label}
+      </span>
+    </div>
+  );
+}
 
 export default function CaseFlashcard({ example, onComplete }) {
   const [answer, setAnswer] = useState(null);
@@ -77,22 +129,14 @@ export default function CaseFlashcard({ example, onComplete }) {
         {CASES.map((option) => {
           const correct = answer && option.value === example.grammaticalCase;
           return (
-            <div className="case-choice" key={option.value} data-case={option.value}>
-              <button
-                type="button"
-                className={`case-option${correct ? " case-option--correct" : ""}`}
-                data-case={option.value}
-                onClick={() => chooseCase(option.value)}
-                disabled={Boolean(answer)}
-                aria-pressed={Boolean(correct)}
-                aria-describedby={`case-label-${option.value}`}
-              >
-                {example.forms[option.value]}<kbd>{option.hint}</kbd>
-              </button>
-              <span className="case-choice__label" id={`case-label-${option.value}`}>
-                {option.label}
-              </span>
-            </div>
+            <CaseOption
+              key={option.value}
+              form={example.forms[option.value]}
+              option={option}
+              correct={correct}
+              answer={answer}
+              onChoose={chooseCase}
+            />
           );
         })}
       </div>

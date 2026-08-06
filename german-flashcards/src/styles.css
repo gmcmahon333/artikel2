@@ -289,6 +289,12 @@ body {
 .case-option:disabled { cursor: default; opacity: 0.4; }
 .case-option--correct:disabled { opacity: 1; border-color: var(--case-color); box-shadow: inset 0 -3px 0 var(--case-color); }
 .case-option kbd { position: absolute; top: 5px; right: 7px; }
+.case-option__form {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  font-size: 0.86rem;
+}
 .case-choice__label {
   display: block;
   margin-top: 7px;

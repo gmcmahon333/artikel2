@@ -188,11 +188,35 @@ const SUPPLEMENTAL_FRAMES = {
   },
 };
 
+const SUPPLEMENTAL_EXAMPLE_OVERRIDES = {
+  "Uhr::nominative": {
+    before: "An der Wand hängt ", after: ".",
+    translation: "The clock hangs on the wall.", trigger: "subject",
+  },
+  "Recht::nominative": {
+    before: "Vor Gericht gilt ", after: " für alle.",
+    translation: "In court, the law applies to everyone.", trigger: "subject",
+  },
+  "Frage::nominative": {
+    before: "Im Gespräch taucht ", after: " erneut auf.",
+    translation: "The question comes up again in the conversation.", trigger: "subject",
+  },
+  "Seite::nominative": {
+    before: "Im Buch fehlt ", after: ".",
+    translation: "The page is missing from the book.", trigger: "subject",
+  },
+  "Ende::accusative": {
+    before: "Niemand erwartet ", after: ".",
+    translation: "No one expects the end.", trigger: "direct object",
+  },
+};
+
 const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
   const word = seedByKey.get(`${noun}::${en}`);
   const gloss = en.split(" / ")[0];
   return PRACTICED_CASES.map((grammaticalCase) => {
-    const frame = SUPPLEMENTAL_FRAMES[grammaticalCase];
+    const frame = SUPPLEMENTAL_EXAMPLE_OVERRIDES[`${noun}::${grammaticalCase}`]
+      || SUPPLEMENTAL_FRAMES[grammaticalCase];
     const target = word[grammaticalCase];
     return {
       id: `${seedCardId(word)}-${{ nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase]}-supplement-01`,
@@ -202,7 +226,8 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
       number: word.number || "singular", determiner: "definite", semanticType,
       before: frame.before, target, after: frame.after,
       sentence: `${frame.before}${target}${frame.after}`,
-      translation: frame.translation(gloss), trigger: frame.trigger,
+      translation: typeof frame.translation === "function" ? frame.translation(gloss) : frame.translation,
+      trigger: frame.trigger,
       cefr: word.cefr, frequencyRank: word.frequencyRank,
       status: "candidate", reviewer: null, reviewedAt: null, reviewNotes: null,
     };
@@ -247,6 +272,62 @@ const GENERATED_EXAMPLE_OVERRIDES = {
   "Glück::accusative::generated-01": {
     before: "Das Gedicht beschreibt ", after: ".",
     translation: "The poem describes happiness.", trigger: "direct object",
+  },
+  "Kopf::nominative::generated-02": {
+    before: "Seit gestern tut ihm ", after: " weh.",
+    translation: "His head has hurt since yesterday.", trigger: "subject",
+  },
+  "Morgen::dative::generated-02": {
+    before: "Seit ", after: " regnet es.",
+    translation: "It has been raining since the morning.", trigger: "seit + dative",
+  },
+  "Dank::dative::generated-02": {
+    before: "Mit ", after: " beendet sie ihre Rede.",
+    translation: "She ends her speech with an expression of gratitude.", trigger: "mit + dative",
+  },
+  "Beispiel::accusative::generated-02": {
+    before: "Der Lehrer erklärt ", after: ".",
+    translation: "The teacher explains the example.", trigger: "direct object",
+  },
+  "Nacht::nominative::generated-01": {
+    before: "In wenigen Minuten beginnt ", after: ".",
+    translation: "Night begins in a few minutes.", trigger: "subject",
+  },
+  "Hilfe::nominative::generated-01": {
+    before: "Zum Glück kommt ", after: " rechtzeitig.",
+    translation: "Fortunately, help arrives on time.", trigger: "subject",
+  },
+  "Hilfe::nominative::generated-02": {
+    before: "Nach dem Unfall trifft ", after: " schnell ein.",
+    translation: "Help arrives quickly after the accident.", trigger: "subject",
+  },
+  "Wort::nominative::generated-02": {
+    before: "In diesem Satz fehlt ", after: ".",
+    translation: "The word is missing from this sentence.", trigger: "subject",
+  },
+  "Laut::accusative::generated-01": {
+    before: "Das Mikrofon verstärkt ", after: ".",
+    translation: "The microphone amplifies the sound.", trigger: "direct object",
+  },
+  "Laut::accusative::generated-02": {
+    before: "Das Kind wiederholt ", after: ".",
+    translation: "The child repeats the sound.", trigger: "direct object",
+  },
+  "Richtung::accusative::generated-01": {
+    before: "Der Kompass zeigt ", after: ".",
+    translation: "The compass shows the direction.", trigger: "direct object",
+  },
+  "Richtung::accusative::generated-02": {
+    before: "Wir ändern ", after: ".",
+    translation: "We change direction.", trigger: "direct object",
+  },
+  "Spaß::accusative::generated-02": {
+    before: "Niemand versteht ", after: ".",
+    translation: "No one understands the joke.", trigger: "direct object",
+  },
+  "Stelle::dative::generated-02": {
+    before: "An ", after: " beginnt der Weg.",
+    translation: "The path begins at that spot.", trigger: "an + dative (location)",
   },
 };
 

@@ -121,22 +121,22 @@ const EXTRA_GOVERNED_EXAMPLES = Object.entries(EXTRA_RULE_SPECS).flatMap(([gover
 });
 
 const EXPANDED_RULE_SPECS = {
-  außer: { nouns: ["Mann", "Frau", "Paar"], frame: (t) => [`Außer ${t} kommt niemand.`, "No one is coming except the named person."] },
-  ab: { nouns: ["Tag", "Jahr", "Woche"], frame: (t) => [`Ab ${t} gilt die neue Regel.`, "The new rule applies from that time onward."] },
-  entgegen: { nouns: ["Wunsch", "Plan", "Idee"], frame: (t) => [`Entgegen ${t} handeln wir anders.`, "Contrary to it, we act differently."] },
-  gemäß: { nouns: ["Plan", "Auftrag", "Recht"], frame: (t) => [`Gemäß ${t} beginnen wir heute.`, "In accordance with it, we begin today."] },
-  samt: { nouns: ["Mann", "Frau", "Paar"], frame: (t) => [`Wir begrüßen alle samt ${t}.`, "We welcome everyone together with the named person."] },
-  mitsamt: { nouns: ["Mann", "Frau", "Paar"], frame: (t) => [`Alle kommen mitsamt ${t}.`, "Everyone is coming together with the named person."] },
-  zufolge: { nouns: ["Mann", "Frau", "Paar"], frame: (t) => [`Wir handeln ${t} zufolge.`, "We act according to the named person."] },
-  zuliebe: { nouns: ["Mann", "Frau", "Paar"], frame: (t) => [`Wir bleiben ${t} zuliebe hier.`, "We are staying here for the named person's sake."] },
-  entsprechend: { nouns: ["Plan", "Wunsch", "Auftrag"], frame: (t) => [`Entsprechend ${t} handeln wir sofort.`, "In accordance with it, we act immediately."] },
-  binnen: { nouns: ["Tag", "Jahr", "Woche"], frame: (t) => [`Binnen ${t} erhalten Sie eine Antwort.`, "You will receive an answer within that period."] },
-  entlang: { nouns: ["Weg", "Straße", "Grenze"], frame: (t) => [`Wir gehen ${t} entlang.`, "We walk along it."] },
-  wider: { nouns: ["Plan", "Wunsch", "Recht"], frame: (t) => [`Das geschieht wider ${t}.`, "That happens contrary to it."] },
-  nebst: { nouns: ["Mann", "Frau", "Paar"], frame: (t) => [`Alle kommen nebst ${t}.`, "Everyone is coming along with the named person."] },
-  nahe: { nouns: ["Stadt", "Dorf", "Grenze"], frame: (t) => [`Das Haus liegt nahe ${t}.`, "The house is located near that place."] },
-  fern: { nouns: ["Stadt", "Dorf", "Grenze"], frame: (t) => [`Das Haus liegt fern ${t}.`, "The house is located far from that place."] },
-  zuwider: { nouns: ["Plan", "Wunsch", "Recht"], frame: (t) => [`Das geschieht ${t} zuwider.`, "That happens contrary to it."] },
+  außer: { nouns: ["Mann", "Frau", "Paar"], frame: (t, g) => [`Außer ${t} kommt niemand.`, `No one is coming except the ${g}.`] },
+  ab: { nouns: ["Tag", "Jahr", "Woche"], frame: (t, g) => [`Ab ${t} gilt die neue Regel.`, `The new rule applies from the ${g} onward.`] },
+  entgegen: { nouns: ["Wunsch", "Plan", "Idee"], frame: (t, g) => [`Entgegen ${t} handeln wir anders.`, `Contrary to the ${g}, we act differently.`] },
+  gemäß: { nouns: ["Plan", "Auftrag", "Recht"], frame: (t, g) => [`Gemäß ${t} beginnen wir heute.`, `In accordance with the ${g}, we begin today.`] },
+  samt: { nouns: ["Mann", "Frau", "Paar"], frame: (t, g) => [`Wir begrüßen alle samt ${t}.`, `We welcome everyone, including the ${g}.`] },
+  mitsamt: { nouns: ["Mann", "Frau", "Paar"], frame: (t, g) => [`Alle kommen mitsamt ${t}.`, `Everyone is coming together with the ${g}.`] },
+  zufolge: { nouns: ["Mann", "Frau", "Paar"], frame: (t, g) => [`Wir handeln ${t} zufolge.`, `We act according to the ${g}.`] },
+  zuliebe: { nouns: ["Mann", "Frau", "Paar"], frame: (t, g) => [`Wir bleiben ${t} zuliebe hier.`, `We are staying here for the sake of the ${g}.`] },
+  entsprechend: { nouns: ["Plan", "Wunsch", "Auftrag"], frame: (t, g) => [`Entsprechend ${t} handeln wir sofort.`, `In accordance with the ${g}, we act immediately.`] },
+  binnen: { nouns: ["Tag", "Jahr", "Woche"], frame: (t, g) => [`Binnen ${t} erhalten Sie eine Antwort.`, `You will receive an answer within the ${g}.`] },
+  entlang: { nouns: ["Weg", "Straße", "Grenze"], frame: (t, g) => [`Wir gehen ${t} entlang.`, `We walk along the ${g}.`] },
+  wider: { nouns: ["Plan", "Wunsch", "Recht"], frame: (t, g) => [`Das geschieht wider ${t}.`, `That happens contrary to the ${g}.`] },
+  nebst: { nouns: ["Mann", "Frau", "Paar"], frame: (t, g) => [`Alle kommen nebst ${t}.`, `Everyone is coming along with the ${g}.`] },
+  nahe: { nouns: ["Stadt", "Dorf", "Grenze"], frame: (t, g) => [`Das Haus liegt nahe ${t}.`, `The house is located near the ${g}.`] },
+  fern: { nouns: ["Stadt", "Dorf", "Grenze"], frame: (t, g) => [`Das Haus liegt fern ${t}.`, `The house is located far from the ${g}.`] },
+  zuwider: { nouns: ["Plan", "Wunsch", "Recht"], frame: (t, g) => [`Das geschieht ${t} zuwider.`, `That happens contrary to the ${g}.`] },
 };
 
 const VERB_FORMS = {
@@ -148,6 +148,15 @@ const VERB_FORMS = {
   genügen: "genügt", missfallen: "missfällt", nützen: "nützt", passen: "passt", raten: "rät",
   schaden: "schadet", schmecken: "schmeckt", widersprechen: "widerspricht", zustimmen: "stimmt",
   zuhören: "hört", verzeihen: "verzeiht",
+};
+
+const VERB_TRANSLATIONS = {
+  essen: "eats", finden: "finds", haben: "has", mögen: "likes", nehmen: "takes",
+  suchen: "looks for", verstehen: "understands", bekommen: "receives", bestellen: "orders",
+  bezahlen: "pays for", fotografieren: "photographs", öffnen: "opens", schließen: "closes",
+  vergessen: "forgets", verlieren: "loses", wählen: "chooses", akzeptieren: "accepts",
+  beantworten: "answers", ähneln: "resembles", drohen: "threatens", entsprechen: "corresponds to",
+  raten: "advises", schaden: "harms", widersprechen: "contradicts", verzeihen: "forgives",
 };
 
 const VERB_NOUNS = {
@@ -163,21 +172,26 @@ const VERB_NOUNS = {
 
 function expandedVerbFrame(rule, target, word) {
   const finite = VERB_FORMS[rule.lemma];
-  if (rule.lemma === "anrufen") return [`Die Gruppe ruft ${target} an.`, "The group calls the named person."];
-  if (rule.lemma === "finden") {
-    const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
-    return [`Die Gruppe findet ${target}.`, `The group finds the ${gloss}.`];
+  const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
+  if (rule.lemma === "anrufen") return [`Die Gruppe ruft ${target} an.`, `The group calls the ${gloss}.`];
+  if (rule.lemma === "einfallen") return [`Die Lösung fällt ${target} ein.`, `The solution occurs to the ${gloss}.`];
+  if (rule.lemma === "gelingen") return [`Die Aufgabe gelingt ${target}.`, `The ${gloss} succeeds at the task.`];
+  if (rule.lemma === "genügen") return [`Die Antwort genügt ${target}.`, `The answer is sufficient for the ${gloss}.`];
+  if (rule.lemma === "missfallen") return [`Der Plan missfällt ${target}.`, `The ${gloss} dislikes the plan.`];
+  if (rule.lemma === "nützen") return [`Die Übung nützt ${target}.`, `The exercise benefits the ${gloss}.`];
+  if (rule.lemma === "passen") return [`Der Termin passt ${target}.`, `The appointment suits the ${gloss}.`];
+  if (rule.lemma === "schmecken") return [`Das Essen schmeckt ${target}.`, `The ${gloss} likes the taste of the food.`];
+  if (rule.lemma === "zustimmen") return [`Die Gruppe stimmt ${target} zu.`, `The group agrees with the ${gloss}.`];
+  if (rule.lemma === "zuhören") return [`Die Gruppe hört ${target} zu.`, `The group listens to the ${gloss}.`];
+  if (rule.lemma === "schließen" && word.noun === "Vertrag") {
+    return [`Die Gruppe schließt ${target}.`, "The group concludes the contract."];
   }
-  if (rule.lemma === "einfallen") return [`Die Lösung fällt ${target} ein.`, "The solution occurs to the named person."];
-  if (rule.lemma === "gelingen") return [`Die Aufgabe gelingt ${target}.`, "The named person succeeds at the task."];
-  if (rule.lemma === "genügen") return [`Die Antwort genügt ${target}.`, "The answer is sufficient for the named person."];
-  if (rule.lemma === "missfallen") return [`Der Plan missfällt ${target}.`, "The named person dislikes the plan."];
-  if (rule.lemma === "nützen") return [`Die Übung nützt ${target}.`, "The exercise benefits the named person."];
-  if (rule.lemma === "passen") return [`Der Termin passt ${target}.`, "The appointment suits the named person."];
-  if (rule.lemma === "schmecken") return [`Das Essen schmeckt ${target}.`, "The named person likes the taste of the food."];
-  if (rule.lemma === "zustimmen") return [`Die Gruppe stimmt ${target} zu.`, "The group agrees with the named person."];
-  if (rule.lemma === "zuhören") return [`Die Gruppe hört ${target} zu.`, "The group listens to the named person."];
-  return [`Die Gruppe ${finite} ${target}.`, `The group uses “${rule.lemma}” with the named object.`];
+  if (rule.lemma === "beantworten" && word.noun === "Bitte") {
+    return [`Die Gruppe beantwortet ${target}.`, "The group responds to the request."];
+  }
+  const englishVerb = VERB_TRANSLATIONS[rule.lemma];
+  if (!englishVerb) throw new Error(`Missing English translation for verb: ${rule.lemma}`);
+  return [`Die Gruppe ${finite} ${target}.`, `The group ${englishVerb} the ${gloss}.`];
 }
 
 const existingRuleIds = new Set([...BASE_GOVERNED_EXAMPLES, ...EXTRA_GOVERNED_EXAMPLES].map((item) => item.ruleId));
@@ -190,7 +204,8 @@ const EXPANDED_GOVERNED_EXAMPLES = [...GRAMMAR_RULE_BY_LEMMA.values()]
       const word = words.get(noun);
       if (!word) throw new Error(`Expanded grammar example references unknown noun: ${noun}`);
       const target = word[rule.grammaticalCase];
-      const [sentence, translation] = spec ? spec.frame(target) : expandedVerbFrame(rule, target, word);
+      const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
+      const [sentence, translation] = spec ? spec.frame(target, gloss) : expandedVerbFrame(rule, target, word);
       const targetIndex = sentence.indexOf(target);
       if (targetIndex < 0) throw new Error(`Expanded grammar frame omits target: ${rule.lemma}`);
       return example(

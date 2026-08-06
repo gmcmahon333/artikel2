@@ -27,6 +27,8 @@ test("lexicon corrections preserve legacy schedules and morphology", () => {
     hardware: ["Eisenwaren", "die", "die Eisenwaren"],
     truck: ["LKW", "der", "der LKW"],
     gratitude: ["Dank", "der", "der Dank"],
+    plastic: ["Kunststoff", "der", "der Kunststoff"],
+    cookie: ["Keks", "der", "der Keks"],
   };
 
   for (const [english, [noun, gender, nominative]] of Object.entries(expected)) {
