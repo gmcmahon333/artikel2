@@ -28,6 +28,14 @@ test("case example library covers every noun with two examples per practiced cas
   );
 });
 
+test("new Artikel nouns stay out of Fälle until content review", async () => {
+  const { loadSeed, seedCardId } = await import("./deck.js");
+  const pending = loadSeed().filter((word) => word.casePracticeStatus === "pending");
+  const caseIds = new Set(CASE_EXAMPLES.map((example) => example.nounId));
+  assert.equal(pending.length, 332);
+  assert.ok(pending.every((word) => !caseIds.has(seedCardId(word))));
+});
+
 test("case examples match deck morphology and the public content schema", () => {
   assert.deepEqual(validateCaseExamples(), []);
   assert.ok(CASE_EXAMPLES.every((example) => example.version === CASE_EXAMPLE_VERSION));
