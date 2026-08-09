@@ -1,6 +1,17 @@
 const CEFR_ORDER = { A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6 };
 const CASE_ORDER = { nominative: 0, accusative: 1, dative: 2 };
 
+export function orderArticleCards(cards, words) {
+  const metadata = new Map(words.map((word) => [word.id, word]));
+  return [...cards].sort((a, b) => {
+    const left = metadata.get(a.id);
+    const right = metadata.get(b.id);
+    return (CEFR_ORDER[left?.cefr] || 99) - (CEFR_ORDER[right?.cefr] || 99)
+      || (left?.frequencyRank || 99999) - (right?.frequencyRank || 99999)
+      || a.id.localeCompare(b.id);
+  });
+}
+
 export function orderCaseCards(cards, examples) {
   const metadata = new Map(examples.map((example) => [example.id, example]));
   return [...cards].sort((a, b) => {

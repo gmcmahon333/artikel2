@@ -4,7 +4,9 @@
 // display it yet. Seed versions let existing users receive new batches without
 // rebuilding cards or losing FSRS review state.
 
-export const CURRENT_DECK_VERSION = 3;
+import { VERSION_FOUR_NOUNS } from "./deckVersionFour.js";
+
+export const CURRENT_DECK_VERSION = 4;
 
 export const SEED = [
   {"seedVersion":2,"noun":"Zeit","gender":"die","plural":"Zeiten","nominative":"die Zeit","genitive":"der Zeit","dative":"der Zeit","accusative":"die Zeit","cefr":"A1","frequencyRank":1,"sourceVerification":"Legacy deck reviewed; corpus metadata added; Merriam-Webster individual check pending","en":"time"},
@@ -1179,16 +1181,20 @@ export const SEED = [
 
 export function loadSeed() {
   const seen = new Set();
+  const seenNouns = new Set();
   const out = [];
-  for (const word of SEED) {
+  for (const word of [...SEED, ...VERSION_FOUR_NOUNS]) {
     // Corrected records can intentionally converge on the same modern noun.
     // Their legacy idKey keeps both learner schedules stable and distinct.
     const key = word.idKey || `${word.noun}::${word.en}`;
-    if (seen.has(key)) continue;
+    // Version four is an expansion, not a source of alternate cards for an
+    // existing lemma. Older records keep their stable IDs and learner state.
+    if (seen.has(key) || (word.seedVersion === 4 && seenNouns.has(word.noun))) continue;
     seen.add(key);
+    seenNouns.add(word.noun);
     out.push(word);
   }
-  return out;
+  return out.map((word, index) => ({ ...word, frequencyRank: index + 1 }));
 }
 
 // IDs are independent of array order, so frequency reordering cannot attach a

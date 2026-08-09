@@ -1,7 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GOVERNED_EXAMPLES } from "./governedExamples.js";
-import { orderCaseCards, orderRuleCards } from "./learningOrder.js";
+import { orderArticleCards, orderCaseCards, orderRuleCards } from "./learningOrder.js";
+
+test("article cards follow CEFR and corpus rank regardless of database order", () => {
+  const words = [
+    { id: "a2", cefr: "A2", frequencyRank: 1 },
+    { id: "a1-later", cefr: "A1", frequencyRank: 9 },
+    { id: "a1-earlier", cefr: "A1", frequencyRank: 2 },
+  ];
+  const ordered = orderArticleCards(words.map(({ id }) => ({ id })).reverse(), words);
+  assert.deepEqual(ordered.map((card) => card.id), ["a1-earlier", "a1-later", "a2"]);
+});
 
 test("rule cards follow CEFR and frequency priority instead of case groups", () => {
   const shuffled = [...GOVERNED_EXAMPLES].reverse().map((example) => ({ id: example.id }));
