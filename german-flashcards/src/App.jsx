@@ -8,7 +8,8 @@ import CaseFlashcard from "./components/CaseFlashcard.jsx";
 import RuleFlashcard from "./components/RuleFlashcard.jsx";
 import { CASE_EXAMPLES } from "./lib/caseExamples.js";
 import { GOVERNED_EXAMPLES } from "./lib/governedExamples.js";
-import { orderCaseCards, orderRuleCards } from "./lib/learningOrder.js";
+import { orderArticleCards, orderCaseCards, orderRuleCards } from "./lib/learningOrder.js";
+import { loadSeed, seedCardId } from "./lib/deck.js";
 import { supabase, hasSupabase } from "./lib/supabaseClient.js";
 import {
   loadCards,
@@ -40,6 +41,8 @@ const NEW_PER_DAY = 15;
 const DAY = 864e5;
 const CASE_IDS = new Set(CASE_EXAMPLES.map((example) => example.id));
 const RULE_IDS = new Set(GOVERNED_EXAMPLES.map((example) => example.id));
+const ARTICLE_WORDS = loadSeed().map((word) => ({ ...word, id: seedCardId(word) }));
+const articleQueue = (cards, options) => buildQueue(orderArticleCards(cards, ARTICLE_WORDS), options);
 
 export default function App() {
   // ---- auth / session ----
@@ -105,7 +108,7 @@ export default function App() {
         ]);
         if (!alive) return;
         setCards(c);
-        setQueue(buildQueue(c, { newPerDay: NEW_PER_DAY }));
+        setQueue(articleQueue(c, { newPerDay: NEW_PER_DAY }));
         setCaseCards(loadedCaseCards);
         setCaseQueue(buildItemQueue(orderCaseCards(loadedCaseCards.filter((card) => CASE_IDS.has(card.id)), CASE_EXAMPLES), { newPerDay: NEW_PER_DAY }));
         setRuleQueue(buildItemQueue(orderRuleCards(loadedCaseCards.filter((card) => RULE_IDS.has(card.id)), GOVERNED_EXAMPLES), { newPerDay: NEW_PER_DAY }));
@@ -329,7 +332,7 @@ export default function App() {
   }
 
   function rebuild() {
-    setQueue(buildQueue(cards, { newPerDay: NEW_PER_DAY }));
+    setQueue(articleQueue(cards, { newPerDay: NEW_PER_DAY }));
     setPos(0);
     setStat({ done: 0, artMissed: 0, meaMissed: 0 });
   }
@@ -346,7 +349,7 @@ export default function App() {
   async function hardReset() {
     const [fresh, freshCaseCards] = await Promise.all([resetAll(userId), resetCaseCards(userId)]);
     setCards(fresh);
-    setQueue(buildQueue(fresh, { newPerDay: NEW_PER_DAY }));
+    setQueue(articleQueue(fresh, { newPerDay: NEW_PER_DAY }));
     setPos(0);
     setCaseCards(freshCaseCards);
     setCaseQueue(buildItemQueue(orderCaseCards(freshCaseCards.filter((card) => CASE_IDS.has(card.id)), CASE_EXAMPLES), { newPerDay: NEW_PER_DAY }));
@@ -371,7 +374,7 @@ export default function App() {
     };
     const next = [...cards, card];
     setCards(next);
-    setQueue(buildQueue(next, { newPerDay: NEW_PER_DAY }));
+    setQueue(articleQueue(next, { newPerDay: NEW_PER_DAY }));
     saveCard(userId, card, next).catch((e) => setLoadError(e.message || "Die Karte konnte nicht hinzugefügt werden."));
   }
   function updateCard(id, fields) {
@@ -384,7 +387,7 @@ export default function App() {
   function removeCard(id) {
     const next = cards.filter((c) => c.id !== id);
     setCards(next);
-    setQueue(buildQueue(next, { newPerDay: NEW_PER_DAY }));
+    setQueue(articleQueue(next, { newPerDay: NEW_PER_DAY }));
     setPos(0);
     deleteCard(userId, id, next).catch((e) => setLoadError(e.message || "Löschen fehlgeschlagen."));
   }
