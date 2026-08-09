@@ -334,6 +334,7 @@ const GENERATED_EXAMPLE_OVERRIDES = {
 const pilotNounIds = new Set(PILOT.map(([noun, en]) => seedCardId(seedByKey.get(`${noun}::${en}`))));
 
 const GENERATED_CASE_EXAMPLES = loadSeed()
+  .filter((word) => word.casePracticeStatus !== "pending")
   .filter((word) => !pilotNounIds.has(seedCardId(word)))
   .flatMap((word) => PRACTICED_CASES.flatMap((grammaticalCase) => {
     const shortCase = { nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase];
@@ -441,7 +442,7 @@ export function validateCaseExamples(
     nounCoverage.get(example.grammaticalCase).push(example);
   }
 
-  for (const word of words) {
+  for (const word of words.filter((item) => item.casePracticeStatus !== "pending")) {
     const nounId = seedCardId(word);
     const nounCoverage = coverage.get(nounId) || new Map();
     for (const grammaticalCase of requiredCases) {
