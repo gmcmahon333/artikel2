@@ -2,28 +2,31 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   CASE_EXAMPLES,
+  CASE_EXAMPLE_CANDIDATES,
   CASE_EXAMPLE_VERSION,
   PRACTICED_CASES,
+  boilerplateCaseExamples,
+  caseRewriteBacklog,
   examplesForNoun,
   validateCaseExamples,
   verifiedExamplesForNoun,
 } from "./caseExamples.js";
 
 test("case example library covers every noun with two examples per practiced case", () => {
-  const nounIds = new Set(CASE_EXAMPLES.map((example) => example.nounId));
+  const nounIds = new Set(CASE_EXAMPLE_CANDIDATES.map((example) => example.nounId));
   assert.equal(nounIds.size, 1168);
-  assert.equal(CASE_EXAMPLES.length, 7009);
+  assert.equal(CASE_EXAMPLE_CANDIDATES.length, 7009);
 
   for (const nounId of nounIds) {
     assert.deepEqual(
-      [...new Set(examplesForNoun(nounId).map((example) => example.grammaticalCase))],
+      [...new Set(CASE_EXAMPLE_CANDIDATES.filter((example) => example.nounId === nounId).map((example) => example.grammaticalCase))],
       PRACTICED_CASES
     );
   }
 
-  const zeitId = CASE_EXAMPLES.find((example) => example.noun === "Zeit").nounId;
+  const zeitId = CASE_EXAMPLE_CANDIDATES.find((example) => example.noun === "Zeit").nounId;
   assert.equal(
-    examplesForNoun(zeitId).filter((example) => example.grammaticalCase === "nominative").length,
+    CASE_EXAMPLE_CANDIDATES.filter((example) => example.nounId === zeitId && example.grammaticalCase === "nominative").length,
     3
   );
 });
@@ -38,13 +41,13 @@ test("new Artikel nouns stay out of Fälle until content review", async () => {
 
 test("case examples match deck morphology and the public content schema", () => {
   assert.deepEqual(validateCaseExamples(), []);
-  assert.ok(CASE_EXAMPLES.every((example) => example.version === CASE_EXAMPLE_VERSION));
-  assert.ok(CASE_EXAMPLES.every((example) => example.status === "candidate"));
-  assert.ok(CASE_EXAMPLES.every((example) =>
+  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => example.version === CASE_EXAMPLE_VERSION));
+  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => example.status === "candidate"));
+  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) =>
     PRACTICED_CASES.every((caseName) => typeof example.forms[caseName] === "string")
   ));
-  assert.ok(CASE_EXAMPLES.every((example) => example.reviewer === null));
-  assert.equal(new Set(CASE_EXAMPLES.map((example) => example.id)).size, CASE_EXAMPLES.length);
+  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => example.reviewer === null));
+  assert.equal(new Set(CASE_EXAMPLE_CANDIDATES.map((example) => example.id)).size, CASE_EXAMPLE_CANDIDATES.length);
   assert.deepEqual(verifiedExamplesForNoun(CASE_EXAMPLES[0].nounId), []);
 });
 
@@ -73,25 +76,60 @@ test("noun-specific candidates replace semantically invalid generated frames", (
     ["Richtung", "accusative", "generated-02", "Wir ändern die Richtung.", "We change direction."],
     ["Spaß", "accusative", "generated-02", "Niemand versteht den Spaß.", "No one understands the joke."],
     ["Stelle", "dative", "generated-02", "An der Stelle beginnt der Weg.", "The path begins at that spot."],
+    ["Mitte", "nominative", "generated-01", "Auf dem Plan ist die Mitte des Tisches markiert.", "The center of the table is marked on the plan."],
+    ["Mitte", "nominative", "generated-02", "Genau zwischen den beiden Punkten liegt die Mitte.", "The center lies exactly between the two points."],
+    ["Mitte", "dative", "generated-01", "In der Mitte des Raumes steht ein Tisch.", "A table stands in the middle of the room."],
+    ["Mitte", "dative", "generated-02", "Von der Mitte aus sieht man beide Eingänge.", "From the middle, you can see both entrances."],
+    ["Mitte", "accusative", "generated-01", "Der Pfeil trifft die Mitte der Zielscheibe.", "The arrow hits the center of the target."],
+    ["Mitte", "accusative", "generated-02", "Bitte markieren Sie die Mitte des Kreises.", "Please mark the center of the circle."],
+    ["Titel", "nominative", "generated-01", "Oben auf der ersten Seite steht der Titel.", "The title appears at the top of the first page."],
+    ["Titel", "nominative", "generated-02", "Schon vor dem Lesen verrät der Titel viel über den Inhalt.", "The title already reveals a lot about the content."],
+    ["Titel", "dative", "generated-01", "Unter dem Titel steht der Name der Autorin.", "The author's name appears beneath the title."],
+    ["Titel", "dative", "generated-02", "Nach dem Titel beginnt das erste Kapitel.", "The first chapter begins after the title."],
+    ["Titel", "accusative", "generated-01", "Die Autorin ändert den Titel ihres Romans.", "The author changes the title of her novel."],
+    ["Titel", "accusative", "generated-02", "Bitte schreiben Sie den Titel auf das Formular.", "Please write the title on the form."],
   ];
 
   for (const [noun, grammaticalCase, idSuffix, sentence, translation] of expected) {
-    const candidate = CASE_EXAMPLES.find((example) =>
+    const candidate = CASE_EXAMPLE_CANDIDATES.find((example) =>
       example.noun === noun && example.grammaticalCase === grammaticalCase && example.id.endsWith(idSuffix)
     );
     assert.deepEqual([candidate.sentence, candidate.translation], [sentence, translation]);
   }
 });
 
+test("semantic audit distinguishes shared boilerplate from noun-specific candidates", () => {
+  const boilerplate = boilerplateCaseExamples();
+  assert.ok(boilerplate.length > 0);
+  assert.ok(boilerplate.every((example) => !["Mitte", "Titel"].includes(example.noun)));
+  assert.ok(boilerplate.every((example) => example.reviewNotes.includes("noun-specific rewrite required")));
+});
+
+test("learner queue excludes shared boilerplate and rewrite backlog follows CEFR then frequency", () => {
+  const boilerplateIds = new Set(boilerplateCaseExamples().map((example) => example.id));
+  assert.ok(CASE_EXAMPLES.length < CASE_EXAMPLE_CANDIDATES.length);
+  assert.ok(CASE_EXAMPLES.every((example) => !boilerplateIds.has(example.id)));
+
+  const backlog = caseRewriteBacklog();
+  assert.ok(backlog.length > 0);
+  for (let index = 1; index < backlog.length; index += 1) {
+    const previous = backlog[index - 1];
+    const current = backlog[index];
+    const previousCefr = ["A1", "A2", "B1", "B2", "C1", "C2"].indexOf(previous.cefr);
+    const currentCefr = ["A1", "A2", "B1", "B2", "C1", "C2"].indexOf(current.cefr);
+    assert.ok(previousCefr < currentCefr || (previousCefr === currentCefr && previous.frequencyRank <= current.frequencyRank));
+  }
+});
+
 test("validator rejects a target that disagrees with deck morphology", () => {
-  const invalid = CASE_EXAMPLES.map((example, index) =>
+  const invalid = CASE_EXAMPLE_CANDIDATES.map((example, index) =>
     index === 0 ? { ...example, target: "dem falschen Wort" } : example
   );
   assert.match(validateCaseExamples(invalid)[0], /target does not match deck morphology/);
 });
 
 test("validator rejects declension choices that disagree with deck morphology", () => {
-  const invalid = CASE_EXAMPLES.map((example, index) =>
+  const invalid = CASE_EXAMPLE_CANDIDATES.map((example, index) =>
     index === 0
       ? { ...example, forms: { ...example.forms, dative: "der falschen Form" } }
       : example
@@ -100,18 +138,18 @@ test("validator rejects declension choices that disagree with deck morphology", 
 });
 
 test("validator rejects missing case coverage without relying on pilot totals", () => {
-  const nounId = CASE_EXAMPLES[0].nounId;
-  const incomplete = CASE_EXAMPLES.filter(
+  const nounId = CASE_EXAMPLE_CANDIDATES[0].nounId;
+  const incomplete = CASE_EXAMPLE_CANDIDATES.filter(
     (example) => !(example.nounId === nounId && example.grammaticalCase === "dative")
   );
   assert.ok(validateCaseExamples(incomplete).some((error) => /needs 2 dative example/.test(error)));
 });
 
 test("optional editorial validation can require reviewed examples", () => {
-  const errors = validateCaseExamples(CASE_EXAMPLES, undefined, { minVerifiedPerCase: 1 });
+  const errors = validateCaseExamples(CASE_EXAMPLE_CANDIDATES, undefined, { minVerifiedPerCase: 1 });
   assert.ok(errors.some((error) => /needs 1 verified nominative example/.test(error)));
 
-  const reviewed = CASE_EXAMPLES.map((example) => ({
+  const reviewed = CASE_EXAMPLE_CANDIDATES.map((example) => ({
     ...example,
     status: "verified",
     reviewer: "reviewer-id",
@@ -121,7 +159,7 @@ test("optional editorial validation can require reviewed examples", () => {
 });
 
 test("verified status requires an auditable reviewer and timestamp", () => {
-  const invalid = CASE_EXAMPLES.map((example, index) =>
+  const invalid = CASE_EXAMPLE_CANDIDATES.map((example, index) =>
     index === 0 ? { ...example, status: "verified" } : example
   );
   assert.ok(validateCaseExamples(invalid).some((error) => /needs reviewer and reviewedAt/.test(error)));

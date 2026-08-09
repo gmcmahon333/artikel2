@@ -215,7 +215,9 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
   const word = seedByKey.get(`${noun}::${en}`);
   const gloss = en.split(" / ")[0];
   return PRACTICED_CASES.map((grammaticalCase) => {
-    const frame = SUPPLEMENTAL_EXAMPLE_OVERRIDES[`${noun}::${grammaticalCase}`]
+    const overrideKey = `${noun}::${grammaticalCase}`;
+    const isNounSpecific = Object.hasOwn(SUPPLEMENTAL_EXAMPLE_OVERRIDES, overrideKey);
+    const frame = SUPPLEMENTAL_EXAMPLE_OVERRIDES[overrideKey]
       || SUPPLEMENTAL_FRAMES[grammaticalCase];
     const target = word[grammaticalCase];
     return {
@@ -229,7 +231,10 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
       translation: typeof frame.translation === "function" ? frame.translation(gloss) : frame.translation,
       trigger: frame.trigger,
       cefr: word.cefr, frequencyRank: word.frequencyRank,
-      status: "candidate", reviewer: null, reviewedAt: null, reviewNotes: null,
+      status: "candidate", reviewer: null, reviewedAt: null,
+      reviewNotes: isNounSpecific
+        ? "Noun-specific candidate; editorial review pending."
+        : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
     };
   });
 });
@@ -257,6 +262,54 @@ const GENERATED_FRAMES = {
 // valid but semantically unnatural with a particular noun. Keys include the
 // generated frame ID so learner scheduling remains unchanged.
 const GENERATED_EXAMPLE_OVERRIDES = {
+  "Mitte::nominative::generated-01": {
+    before: "Auf dem Plan ist ", after: " des Tisches markiert.",
+    translation: "The center of the table is marked on the plan.", trigger: "subject",
+  },
+  "Mitte::nominative::generated-02": {
+    before: "Genau zwischen den beiden Punkten liegt ", after: ".",
+    translation: "The center lies exactly between the two points.", trigger: "subject",
+  },
+  "Mitte::dative::generated-01": {
+    before: "In ", after: " des Raumes steht ein Tisch.",
+    translation: "A table stands in the middle of the room.", trigger: "in + dative (location)",
+  },
+  "Mitte::dative::generated-02": {
+    before: "Von ", after: " aus sieht man beide Eingänge.",
+    translation: "From the middle, you can see both entrances.", trigger: "von + dative",
+  },
+  "Mitte::accusative::generated-01": {
+    before: "Der Pfeil trifft ", after: " der Zielscheibe.",
+    translation: "The arrow hits the center of the target.", trigger: "direct object",
+  },
+  "Mitte::accusative::generated-02": {
+    before: "Bitte markieren Sie ", after: " des Kreises.",
+    translation: "Please mark the center of the circle.", trigger: "direct object",
+  },
+  "Titel::nominative::generated-01": {
+    before: "Oben auf der ersten Seite steht ", after: ".",
+    translation: "The title appears at the top of the first page.", trigger: "subject",
+  },
+  "Titel::nominative::generated-02": {
+    before: "Schon vor dem Lesen verrät ", after: " viel über den Inhalt.",
+    translation: "The title already reveals a lot about the content.", trigger: "subject",
+  },
+  "Titel::dative::generated-01": {
+    before: "Unter ", after: " steht der Name der Autorin.",
+    translation: "The author's name appears beneath the title.", trigger: "unter + dative (location)",
+  },
+  "Titel::dative::generated-02": {
+    before: "Nach ", after: " beginnt das erste Kapitel.",
+    translation: "The first chapter begins after the title.", trigger: "nach + dative",
+  },
+  "Titel::accusative::generated-01": {
+    before: "Die Autorin ändert ", after: " ihres Romans.",
+    translation: "The author changes the title of her novel.", trigger: "direct object",
+  },
+  "Titel::accusative::generated-02": {
+    before: "Bitte schreiben Sie ", after: " auf das Formular.",
+    translation: "Please write the title on the form.", trigger: "direct object",
+  },
   "Dank::dative::generated-01": {
     before: "Mit ", after: " endet ihre Rede.",
     translation: "Her speech ends with an expression of gratitude.", trigger: "mit + dative",
@@ -340,7 +393,9 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
     const shortCase = { nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase];
     const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
     return GENERATED_FRAMES[grammaticalCase].map((frame) => {
-      const authored = GENERATED_EXAMPLE_OVERRIDES[`${word.noun}::${grammaticalCase}::${frame.key}`] || frame;
+      const overrideKey = `${word.noun}::${grammaticalCase}::${frame.key}`;
+      const isNounSpecific = Object.hasOwn(GENERATED_EXAMPLE_OVERRIDES, overrideKey);
+      const authored = GENERATED_EXAMPLE_OVERRIDES[overrideKey] || frame;
       const target = word[grammaticalCase];
       return {
         id: `${seedCardId(word)}-${shortCase}-${frame.key}`,
@@ -363,16 +418,59 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
         status: "candidate",
         reviewer: null,
         reviewedAt: null,
-        reviewNotes: "Generated neutral frame; editorial review pending.",
+        reviewNotes: isNounSpecific
+          ? "Noun-specific candidate; editorial review pending."
+          : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
       };
     });
   }));
 
-export const CASE_EXAMPLES = [
+export const CASE_EXAMPLE_CANDIDATES = [
   ...CORE_CASE_EXAMPLES,
   ...SUPPLEMENTAL_CASE_EXAMPLES,
   ...GENERATED_CASE_EXAMPLES,
 ];
+
+export function boilerplateCaseExamples(examples = CASE_EXAMPLE_CANDIDATES) {
+  return examples.filter((example) =>
+    example.reviewNotes === "Shared boilerplate frame; noun-specific rewrite required before editorial review."
+  );
+}
+
+const BOILERPLATE_CASE_IDS = new Set(boilerplateCaseExamples().map((example) => example.id));
+
+// Only noun-specific candidates reach learners. Shared frames remain in the
+// authoring library so editors can replace them in stable CEFR/frequency order
+// without changing IDs or discarding existing schedules.
+export const CASE_EXAMPLES = CASE_EXAMPLE_CANDIDATES.filter(
+  (example) => !BOILERPLATE_CASE_IDS.has(example.id)
+);
+
+const CEFR_ORDER = new Map(["A1", "A2", "B1", "B2", "C1", "C2"].map((level, index) => [level, index]));
+
+export function caseRewriteBacklog(examples = CASE_EXAMPLE_CANDIDATES) {
+  const byNoun = new Map();
+  for (const example of boilerplateCaseExamples(examples)) {
+    if (!byNoun.has(example.nounId)) {
+      byNoun.set(example.nounId, {
+        nounId: example.nounId,
+        noun: example.noun,
+        cefr: example.cefr,
+        frequencyRank: example.frequencyRank,
+        remainingExampleIds: [],
+      });
+    }
+    byNoun.get(example.nounId).remainingExampleIds.push(example.id);
+  }
+
+  return [...byNoun.values()].sort((left, right) =>
+    (CEFR_ORDER.get(left.cefr) ?? Number.MAX_SAFE_INTEGER)
+      - (CEFR_ORDER.get(right.cefr) ?? Number.MAX_SAFE_INTEGER)
+    || (left.frequencyRank ?? Number.MAX_SAFE_INTEGER)
+      - (right.frequencyRank ?? Number.MAX_SAFE_INTEGER)
+    || left.noun.localeCompare(right.noun, "de")
+  );
+}
 
 export function examplesForNoun(nounId, { status } = {}) {
   return CASE_EXAMPLES.filter(
@@ -385,7 +483,7 @@ export function verifiedExamplesForNoun(nounId) {
 }
 
 export function validateCaseExamples(
-  examples = CASE_EXAMPLES,
+  examples = CASE_EXAMPLE_CANDIDATES,
   words = loadSeed(),
   { requiredCases = PRACTICED_CASES, minExamplesPerCase = 2, minVerifiedPerCase = 0 } = {}
 ) {
