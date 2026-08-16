@@ -53,6 +53,16 @@ test("case examples match deck morphology and the public content schema", () => 
 
 test("noun-specific candidates replace semantically invalid generated frames", () => {
   const expected = [
+    ["Zeit", "nominative", "supplement-01", "Beim Warten vergeht die Zeit nur langsam.", "Time passes slowly while waiting."],
+    ["Zeit", "dative", "supplement-01", "Mit der Zeit wird vieles leichter.", "Many things become easier with time."],
+    ["Zeit", "accusative", "supplement-01", "Beim Lesen vergesse ich oft die Zeit.", "I often lose track of time while reading."],
+    ["Jahr", "nominative", "supplement-01", "Für unsere Familie war das Jahr voller Veränderungen.", "The year was full of changes for our family."],
+    ["Jahr", "dative", "supplement-01", "Seit dem Jahr 2020 arbeitet er von zu Hause.", "He has worked from home since 2020."],
+    ["Jahr", "accusative", "supplement-01", "Niemand wird das Jahr 2020 vergessen.", "No one will forget the year 2020."],
+    ["Mann", "nominative", "supplement-01", "Vor dem Bahnhof wartet der Mann mit einem roten Koffer.", "The man is waiting in front of the train station with a red suitcase."],
+    ["Mann", "dative", "supplement-01", "Die Ärztin erklärt dem Mann die Behandlung.", "The doctor explains the treatment to the man."],
+    ["Mann", "accusative", "supplement-01", "Die Polizei befragt den Mann.", "The police question the man."],
+    ["Bitte", "nominative", "supplement-01", "Am Ende des Briefes steht die Bitte um eine schnelle Antwort.", "The letter ends with a request for a quick reply."],
     ["Dank", "dative", "generated-01", "Mit dem Dank endet ihre Rede.", "Her speech ends with an expression of gratitude."],
     ["Abend", "accusative", "generated-02", "Wir genießen den Abend.", "We enjoy the evening."],
     ["Straße", "dative", "generated-02", "Wir folgen der Straße bis zum Bahnhof.", "We follow the street to the train station."],

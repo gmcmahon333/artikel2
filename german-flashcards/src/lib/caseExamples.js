@@ -189,6 +189,46 @@ const SUPPLEMENTAL_FRAMES = {
 };
 
 const SUPPLEMENTAL_EXAMPLE_OVERRIDES = {
+  "Zeit::nominative": {
+    before: "Beim Warten vergeht ", after: " nur langsam.",
+    translation: "Time passes slowly while waiting.", trigger: "subject",
+  },
+  "Zeit::dative": {
+    before: "Mit ", after: " wird vieles leichter.",
+    translation: "Many things become easier with time.", trigger: "mit + dative",
+  },
+  "Zeit::accusative": {
+    before: "Beim Lesen vergesse ich oft ", after: ".",
+    translation: "I often lose track of time while reading.", trigger: "direct object",
+  },
+  "Jahr::nominative": {
+    before: "Für unsere Familie war ", after: " voller Veränderungen.",
+    translation: "The year was full of changes for our family.", trigger: "subject",
+  },
+  "Jahr::dative": {
+    before: "Seit ", after: " 2020 arbeitet er von zu Hause.",
+    translation: "He has worked from home since 2020.", trigger: "seit + dative",
+  },
+  "Jahr::accusative": {
+    before: "Niemand wird ", after: " 2020 vergessen.",
+    translation: "No one will forget the year 2020.", trigger: "direct object",
+  },
+  "Mann::nominative": {
+    before: "Vor dem Bahnhof wartet ", after: " mit einem roten Koffer.",
+    translation: "The man is waiting in front of the train station with a red suitcase.", trigger: "subject",
+  },
+  "Mann::dative": {
+    before: "Die Ärztin erklärt ", after: " die Behandlung.",
+    translation: "The doctor explains the treatment to the man.", trigger: "indirect object",
+  },
+  "Mann::accusative": {
+    before: "Die Polizei befragt ", after: ".",
+    translation: "The police question the man.", trigger: "direct object",
+  },
+  "Bitte::nominative": {
+    before: "Am Ende des Briefes steht ", after: " um eine schnelle Antwort.",
+    translation: "The letter ends with a request for a quick reply.", trigger: "subject",
+  },
   "Uhr::nominative": {
     before: "An der Wand hängt ", after: ".",
     translation: "The clock hangs on the wall.", trigger: "subject",
