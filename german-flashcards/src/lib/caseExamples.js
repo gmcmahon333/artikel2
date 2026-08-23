@@ -251,6 +251,49 @@ const SUPPLEMENTAL_EXAMPLE_OVERRIDES = {
   },
 };
 
+const PACKAGE_2_APPROVED_IDS = new Set([
+  "seed-v3-Bitte%3A%3Arequest%20%2F%20please-acc-supplement-01",
+  "seed-v2-Tag%3A%3Aday-acc-supplement-01",
+  "seed-v3-Uhr%3A%3Awatch%20%2F%20clock-dat-supplement-01",
+  "seed-v3-Uhr%3A%3Awatch%20%2F%20clock-acc-supplement-01",
+  "seed-v2-Weg%3A%3Away%20%2F%20path-acc-supplement-01",
+  "seed-v2-Frau%3A%3Awoman-dat-supplement-01",
+  "seed-v2-Frau%3A%3Awoman-acc-supplement-01",
+]);
+
+const PACKAGE_3_APPROVED_IDS = new Set([
+  "seed-v2-Stadt%3A%3Acity-acc-supplement-01",
+  "seed-v3-Recht%3A%3Aright%20%2F%20law-acc-supplement-01",
+  "seed-v2-Geld%3A%3Amoney-dat-supplement-01",
+  "seed-v2-Geld%3A%3Amoney-acc-supplement-01",
+  "seed-v2-Teil%3A%3Apart-dat-supplement-01",
+  "seed-v2-Teil%3A%3Apart-acc-supplement-01",
+  "seed-v2-Frage%3A%3Aquestion-dat-supplement-01",
+  "seed-v2-Frage%3A%3Aquestion-acc-supplement-01",
+  "seed-v2-Arbeit%3A%3Awork-dat-supplement-01",
+  "seed-v2-Arbeit%3A%3Awork-acc-supplement-01",
+  "seed-v3-Paar%3A%3Acouple%20%2F%20pair-dat-supplement-01",
+  "seed-v3-Paar%3A%3Acouple%20%2F%20pair-acc-supplement-01",
+  "seed-v2-Land%3A%3Acountry-dat-supplement-01",
+  "seed-v2-Land%3A%3Acountry-acc-supplement-01",
+  "seed-v2-Geschichte%3A%3Astory%20%2F%20history-nom-generated-01",
+]);
+
+const PACKAGE_2_REMOVED_IDS = new Set([
+  "seed-v3-Bitte%3A%3Arequest%20%2F%20please-dat-supplement-01",
+  "seed-v2-Tag%3A%3Aday-dat-supplement-01",
+  "seed-v2-Weg%3A%3Away%20%2F%20path-dat-supplement-01",
+  "seed-v2-Ende%3A%3Aend-dat-supplement-01",
+  "seed-v2-Welt%3A%3Aworld-dat-supplement-01",
+  "seed-v2-Welt%3A%3Aworld-acc-supplement-01",
+  "seed-v2-Stadt%3A%3Acity-dat-supplement-01",
+]);
+
+const PACKAGE_2_REVIEWER = "geoffrey-email-package-2";
+const PACKAGE_2_REVIEWED_AT = "2026-08-17T14:57:05.000Z";
+const PACKAGE_3_REVIEWER = "geoffrey-email-package-3";
+const PACKAGE_3_REVIEWED_AT = "2026-08-19T08:33:02.000Z";
+
 const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
   const word = seedByKey.get(`${noun}::${en}`);
   const gloss = en.split(" / ")[0];
@@ -260,8 +303,14 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
     const frame = SUPPLEMENTAL_EXAMPLE_OVERRIDES[overrideKey]
       || SUPPLEMENTAL_FRAMES[grammaticalCase];
     const target = word[grammaticalCase];
+    const id = `${seedCardId(word)}-${{ nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase]}-supplement-01`;
+    const removedByTemplateRule = frame.before === "Heute steht " && frame.after === " im Mittelpunkt.";
+    const isApproved = PACKAGE_2_APPROVED_IDS.has(id) || PACKAGE_3_APPROVED_IDS.has(id);
+    const isRemoved = removedByTemplateRule || PACKAGE_2_REMOVED_IDS.has(id);
+    const reviewer = PACKAGE_3_APPROVED_IDS.has(id) ? PACKAGE_3_REVIEWER : PACKAGE_2_REVIEWER;
+    const reviewedAt = PACKAGE_3_APPROVED_IDS.has(id) ? PACKAGE_3_REVIEWED_AT : PACKAGE_2_REVIEWED_AT;
     return {
-      id: `${seedCardId(word)}-${{ nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase]}-supplement-01`,
+      id,
       version: CASE_EXAMPLE_VERSION,
       nounId: seedCardId(word), noun, grammaticalCase,
       forms: Object.fromEntries(PRACTICED_CASES.map((caseName) => [caseName, word[caseName]])),
@@ -271,10 +320,16 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
       translation: typeof frame.translation === "function" ? frame.translation(gloss) : frame.translation,
       trigger: frame.trigger,
       cefr: word.cefr, frequencyRank: word.frequencyRank,
-      status: "candidate", reviewer: null, reviewedAt: null,
-      reviewNotes: isNounSpecific
-        ? "Noun-specific candidate; editorial review pending."
-        : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
+      status: isRemoved ? "rejected" : isApproved ? "verified" : "candidate",
+      reviewer: isRemoved || isApproved ? reviewer : null,
+      reviewedAt: isRemoved || isApproved ? reviewedAt : null,
+      reviewNotes: isRemoved
+        ? "Removed by editorial review; do not publish or resend."
+        : isApproved
+          ? `Approved by editorial review in Fälle-Prüfung package ${PACKAGE_3_APPROVED_IDS.has(id) ? "3" : "2"}.`
+          : isNounSpecific
+            ? "Noun-specific candidate; editorial review pending."
+            : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
     };
   });
 });
@@ -437,8 +492,10 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
       const isNounSpecific = Object.hasOwn(GENERATED_EXAMPLE_OVERRIDES, overrideKey);
       const authored = GENERATED_EXAMPLE_OVERRIDES[overrideKey] || frame;
       const target = word[grammaticalCase];
+      const id = `${seedCardId(word)}-${shortCase}-${frame.key}`;
+      const isApproved = PACKAGE_3_APPROVED_IDS.has(id);
       return {
-        id: `${seedCardId(word)}-${shortCase}-${frame.key}`,
+        id,
         version: CASE_EXAMPLE_VERSION,
         nounId: seedCardId(word),
         noun: word.noun,
@@ -455,12 +512,14 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
         trigger: authored.trigger,
         cefr: word.cefr,
         frequencyRank: word.frequencyRank,
-        status: "candidate",
-        reviewer: null,
-        reviewedAt: null,
-        reviewNotes: isNounSpecific
-          ? "Noun-specific candidate; editorial review pending."
-          : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
+        status: isApproved ? "verified" : "candidate",
+        reviewer: isApproved ? PACKAGE_3_REVIEWER : null,
+        reviewedAt: isApproved ? PACKAGE_3_REVIEWED_AT : null,
+        reviewNotes: isApproved
+          ? "Approved by editorial review in Fälle-Prüfung package 3."
+          : isNounSpecific
+            ? "Noun-specific candidate; editorial review pending."
+            : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
       };
     });
   }));
@@ -483,7 +542,7 @@ const BOILERPLATE_CASE_IDS = new Set(boilerplateCaseExamples().map((example) => 
 // authoring library so editors can replace them in stable CEFR/frequency order
 // without changing IDs or discarding existing schedules.
 export const CASE_EXAMPLES = CASE_EXAMPLE_CANDIDATES.filter(
-  (example) => !BOILERPLATE_CASE_IDS.has(example.id)
+  (example) => example.status !== "rejected" && !BOILERPLATE_CASE_IDS.has(example.id)
 );
 
 const CEFR_ORDER = new Map(["A1", "A2", "B1", "B2", "C1", "C2"].map((level, index) => [level, index]));

@@ -42,13 +42,75 @@ test("new Artikel nouns stay out of Fälle until content review", async () => {
 test("case examples match deck morphology and the public content schema", () => {
   assert.deepEqual(validateCaseExamples(), []);
   assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => example.version === CASE_EXAMPLE_VERSION));
-  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => example.status === "candidate"));
+  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => ["candidate", "verified", "rejected"].includes(example.status)));
   assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) =>
     PRACTICED_CASES.every((caseName) => typeof example.forms[caseName] === "string")
   ));
-  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) => example.reviewer === null));
+  assert.ok(CASE_EXAMPLE_CANDIDATES.every((example) =>
+    example.status === "candidate" ? example.reviewer === null : typeof example.reviewer === "string"
+  ));
   assert.equal(new Set(CASE_EXAMPLE_CANDIDATES.map((example) => example.id)).size, CASE_EXAMPLE_CANDIDATES.length);
   assert.deepEqual(verifiedExamplesForNoun(CASE_EXAMPLES[0].nounId), []);
+});
+
+test("package 2 approvals and removals carry auditable editorial status", () => {
+  const approvedSentences = new Set([
+    "Wir sprechen über die Bitte.",
+    "Wir sprechen über den Tag.",
+    "Wir beschäftigen uns mit der Uhr.",
+    "Wir sprechen über die Uhr.",
+    "Wir sprechen über den Weg.",
+    "Wir beschäftigen uns mit der Frau.",
+    "Wir sprechen über die Frau.",
+  ]);
+  const approved = CASE_EXAMPLE_CANDIDATES.filter((example) => approvedSentences.has(example.sentence));
+  assert.equal(approved.length, 7);
+  assert.ok(approved.every((example) => example.status === "verified"));
+  assert.ok(approved.every((example) => CASE_EXAMPLES.some((published) => published.id === example.id)));
+
+  const removed = CASE_EXAMPLE_CANDIDATES.filter((example) =>
+    example.sentence.startsWith("Heute steht ") && example.sentence.endsWith(" im Mittelpunkt.")
+  );
+  assert.ok(removed.length > 0);
+  assert.ok(removed.every((example) => example.status === "rejected"));
+  assert.ok(removed.every((example) => !CASE_EXAMPLES.some((published) => published.id === example.id)));
+  assert.ok(removed.every((example) => !caseRewriteBacklog().some((noun) => noun.remainingExampleIds.includes(example.id))));
+});
+
+test("package 3 approvals are published while requested rewrites remain withheld", () => {
+  const approvedSentences = new Set([
+    "Wir sprechen über die Stadt.",
+    "Wir sprechen über das Recht.",
+    "Wir beschäftigen uns mit dem Geld.",
+    "Wir sprechen über das Geld.",
+    "Wir beschäftigen uns mit dem Teil.",
+    "Wir sprechen über den Teil.",
+    "Wir beschäftigen uns mit der Frage.",
+    "Wir sprechen über die Frage.",
+    "Wir beschäftigen uns mit der Arbeit.",
+    "Wir sprechen über die Arbeit.",
+    "Wir beschäftigen uns mit dem Paar.",
+    "Wir sprechen über das Paar.",
+    "Wir beschäftigen uns mit dem Land.",
+    "Wir sprechen über das Land.",
+    "Hier ist die Geschichte.",
+  ]);
+  const approved = CASE_EXAMPLE_CANDIDATES.filter((example) => approvedSentences.has(example.sentence));
+  assert.equal(approved.length, 15);
+  assert.ok(approved.every((example) => example.status === "verified"));
+  assert.ok(approved.every((example) => CASE_EXAMPLES.some((published) => published.id === example.id)));
+
+  const pendingRewrites = new Set([
+    "Wir beschäftigen uns mit dem Recht.",
+    "Wir beschäftigen uns mit der Seite.",
+    "Wir sprechen über die Seite.",
+    "Wir beschäftigen uns mit der Liebe.",
+    "Wir sprechen über die Liebe.",
+  ]);
+  const pending = CASE_EXAMPLE_CANDIDATES.filter((example) => pendingRewrites.has(example.sentence));
+  assert.equal(pending.length, 5);
+  assert.ok(pending.every((example) => example.status === "candidate"));
+  assert.ok(pending.every((example) => !CASE_EXAMPLES.some((published) => published.id === example.id)));
 });
 
 test("noun-specific candidates replace semantically invalid generated frames", () => {
