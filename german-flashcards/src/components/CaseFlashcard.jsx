@@ -121,7 +121,7 @@ export default function CaseFlashcard({ example, onComplete }) {
 
       <p className="case-card__sentence">
         {example.before}
-        {answer ? <mark>{example.target}</mark> : <span className="case-card__blank" aria-label="Lücke" />}
+        {answer ? <mark>{example.displayTarget || example.target}</mark> : <span className="case-card__blank" aria-label="Lücke" />}
         {example.after}
       </p>
 

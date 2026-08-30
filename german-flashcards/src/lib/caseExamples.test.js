@@ -77,7 +77,7 @@ test("package 2 approvals and removals carry auditable editorial status", () => 
   assert.ok(removed.every((example) => !caseRewriteBacklog().some((noun) => noun.remainingExampleIds.includes(example.id))));
 });
 
-test("package 3 approvals are published while requested rewrites remain withheld", () => {
+test("package 3 approvals are published", () => {
   const approvedSentences = new Set([
     "Wir sprechen über die Stadt.",
     "Wir sprechen über das Recht.",
@@ -100,17 +100,29 @@ test("package 3 approvals are published while requested rewrites remain withheld
   assert.ok(approved.every((example) => example.status === "verified"));
   assert.ok(approved.every((example) => CASE_EXAMPLES.some((published) => published.id === example.id)));
 
-  const pendingRewrites = new Set([
-    "Wir beschäftigen uns mit dem Recht.",
-    "Wir beschäftigen uns mit der Seite.",
-    "Wir sprechen über die Seite.",
-    "Wir beschäftigen uns mit der Liebe.",
-    "Wir sprechen über die Liebe.",
+});
+
+test("package 4 publishes approved examples and withholds requested template rewrites", () => {
+  const approvedIds = new Set([
+    "seed-v3-Recht%3A%3Aright%20%2F%20law-dat-supplement-01",
+    "seed-v2-Seite%3A%3Aside%20%2F%20page-dat-supplement-01",
+    "seed-v2-Seite%3A%3Aside%20%2F%20page-acc-supplement-01",
+    "seed-v2-Liebe%3A%3Alove-dat-supplement-01",
+    "seed-v2-Liebe%3A%3Alove-acc-supplement-01",
   ]);
-  const pending = CASE_EXAMPLE_CANDIDATES.filter((example) => pendingRewrites.has(example.sentence));
-  assert.equal(pending.length, 5);
-  assert.ok(pending.every((example) => example.status === "candidate"));
-  assert.ok(pending.every((example) => !CASE_EXAMPLES.some((published) => published.id === example.id)));
+  const approved = CASE_EXAMPLE_CANDIDATES.filter((example) => approvedIds.has(example.id));
+  assert.equal(approved.length, approvedIds.size);
+  assert.ok(approved.every((example) => example.status === "verified"));
+  assert.ok(approved.every((example) => example.reviewer === "geoffrey-email-package-4"));
+  assert.ok(approved.every((example) => CASE_EXAMPLES.some((published) => published.id === example.id)));
+
+  const requestedRewrites = CASE_EXAMPLE_CANDIDATES.filter((example) =>
+    example.sentence.startsWith("Dort steht ")
+    || example.sentence.startsWith("Wir betrachten ")
+  );
+  assert.ok(requestedRewrites.length > 0);
+  assert.ok(requestedRewrites.every((example) => example.status === "candidate"));
+  assert.ok(requestedRewrites.every((example) => !CASE_EXAMPLES.some((published) => published.id === example.id)));
 });
 
 test("noun-specific candidates replace semantically invalid generated frames", () => {
@@ -175,6 +187,17 @@ test("semantic audit distinguishes shared boilerplate from noun-specific candida
   assert.ok(boilerplate.length > 0);
   assert.ok(boilerplate.every((example) => !["Mitte", "Titel"].includes(example.noun)));
   assert.ok(boilerplate.every((example) => example.reviewNotes.includes("noun-specific rewrite required")));
+});
+
+test("package 5 publishes all 60 email-approved examples with an audit trail", () => {
+  const reviewed = CASE_EXAMPLE_CANDIDATES.filter(
+    (example) => example.reviewer === "geoffrey-email-package-5"
+  );
+  assert.equal(reviewed.length, 60);
+  assert.ok(reviewed.every((example) => example.status === "verified"));
+  assert.ok(reviewed.every((example) => example.reviewedAt));
+  const publishedIds = new Set(CASE_EXAMPLES.map((example) => example.id));
+  assert.ok(reviewed.every((example) => publishedIds.has(example.id)));
 });
 
 test("learner queue excludes shared boilerplate and rewrite backlog follows CEFR then frequency", () => {

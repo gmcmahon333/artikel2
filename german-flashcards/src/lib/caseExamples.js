@@ -245,6 +245,26 @@ const SUPPLEMENTAL_EXAMPLE_OVERRIDES = {
     before: "Im Buch fehlt ", after: ".",
     translation: "The page is missing from the book.", trigger: "subject",
   },
+  "Recht::dative": {
+    before: "Nach ", after: " des Landes ist die Kündigung unwirksam.",
+    translation: "Under the law of the country, the termination is invalid.", trigger: "nach + dative",
+  },
+  "Seite::dative": {
+    before: "Auf ", after: " steht eine wichtige Notiz.",
+    translation: "There is an important note on the page.", trigger: "auf + dative (location)",
+  },
+  "Seite::accusative": {
+    before: "Bitte öffnen Sie ", after: " mit den Kontaktdaten.",
+    translation: "Please open the page with the contact details.", trigger: "direct object",
+  },
+  "Liebe::dative": {
+    before: "Aus ", after: " zur Musik entstand dieses Lied.",
+    translation: "This song grew out of a love of music.", trigger: "aus + dative",
+  },
+  "Liebe::accusative": {
+    before: "Das Gedicht beschreibt ", after: " zwischen zwei Menschen.",
+    translation: "The poem describes the love between two people.", trigger: "direct object",
+  },
   "Ende::accusative": {
     before: "Niemand erwartet ", after: ".",
     translation: "No one expects the end.", trigger: "direct object",
@@ -279,6 +299,43 @@ const PACKAGE_3_APPROVED_IDS = new Set([
   "seed-v2-Geschichte%3A%3Astory%20%2F%20history-nom-generated-01",
 ]);
 
+const PACKAGE_4_APPROVED_IDS = new Set([
+  "seed-v3-Recht%3A%3Aright%20%2F%20law-dat-supplement-01",
+  "seed-v2-Seite%3A%3Aside%20%2F%20page-dat-supplement-01",
+  "seed-v2-Seite%3A%3Aside%20%2F%20page-acc-supplement-01",
+  "seed-v2-Liebe%3A%3Alove-dat-supplement-01",
+  "seed-v2-Liebe%3A%3Alove-acc-supplement-01",
+  "seed-v2-Geschichte%3A%3Astory%20%2F%20history-dat-generated-01",
+  "seed-v2-Geschichte%3A%3Astory%20%2F%20history-dat-generated-02",
+  "seed-v2-Morgen%3A%3Amorning-nom-generated-01",
+  "seed-v2-Morgen%3A%3Amorning-dat-generated-01",
+  "seed-v2-Haus%3A%3Ahouse-nom-generated-01",
+  "seed-v2-Haus%3A%3Ahouse-dat-generated-01",
+  "seed-v2-Haus%3A%3Ahouse-dat-generated-02",
+  "seed-v2-Haus%3A%3Ahouse-acc-generated-02",
+  "seed-v2-Familie%3A%3Afamily-nom-generated-01",
+  "seed-v2-Familie%3A%3Afamily-dat-generated-01",
+  "seed-v2-Familie%3A%3Afamily-dat-generated-02",
+  "seed-v3-Bild%3A%3Apicture-nom-generated-01",
+  "seed-v3-Bild%3A%3Apicture-dat-generated-01",
+  "seed-v3-Bild%3A%3Apicture-dat-generated-02",
+  "seed-v3-Bild%3A%3Apicture-acc-generated-02",
+  "seed-v2-Woche%3A%3Aweek-nom-generated-01",
+  "seed-v2-Woche%3A%3Aweek-dat-generated-01",
+  "seed-v2-Woche%3A%3Aweek-dat-generated-02",
+  "seed-v3-Unternehmen%3A%3Acompany%20%2F%20enterprise-nom-generated-01",
+  "seed-v3-Unternehmen%3A%3Acompany%20%2F%20enterprise-dat-generated-01",
+  "seed-v3-Unternehmen%3A%3Acompany%20%2F%20enterprise-dat-generated-02",
+  "seed-v2-Grund%3A%3Areason%20%2F%20ground-nom-generated-01",
+  "seed-v2-Grund%3A%3Areason%20%2F%20ground-dat-generated-01",
+  "seed-v2-Grund%3A%3Areason%20%2F%20ground-dat-generated-02",
+  "seed-v2-Problem%3A%3Aproblem-nom-generated-01",
+  "seed-v2-Problem%3A%3Aproblem-dat-generated-01",
+  "seed-v2-Problem%3A%3Aproblem-dat-generated-02",
+  "seed-v2-Nacht%3A%3Anight-dat-generated-01",
+  "seed-v2-Nacht%3A%3Anight-dat-generated-02",
+]);
+
 const PACKAGE_2_REMOVED_IDS = new Set([
   "seed-v3-Bitte%3A%3Arequest%20%2F%20please-dat-supplement-01",
   "seed-v2-Tag%3A%3Aday-dat-supplement-01",
@@ -293,6 +350,10 @@ const PACKAGE_2_REVIEWER = "geoffrey-email-package-2";
 const PACKAGE_2_REVIEWED_AT = "2026-08-17T14:57:05.000Z";
 const PACKAGE_3_REVIEWER = "geoffrey-email-package-3";
 const PACKAGE_3_REVIEWED_AT = "2026-08-19T08:33:02.000Z";
+const PACKAGE_4_REVIEWER = "geoffrey-email-package-4";
+const PACKAGE_4_REVIEWED_AT = "2026-08-23T14:04:17.000Z";
+const PACKAGE_5_REVIEWER = "geoffrey-email-package-5";
+const PACKAGE_5_REVIEWED_AT = "2026-08-26T00:00:00.000Z";
 
 const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
   const word = seedByKey.get(`${noun}::${en}`);
@@ -305,10 +366,14 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
     const target = word[grammaticalCase];
     const id = `${seedCardId(word)}-${{ nominative: "nom", dative: "dat", accusative: "acc" }[grammaticalCase]}-supplement-01`;
     const removedByTemplateRule = frame.before === "Heute steht " && frame.after === " im Mittelpunkt.";
-    const isApproved = PACKAGE_2_APPROVED_IDS.has(id) || PACKAGE_3_APPROVED_IDS.has(id);
+    const isApproved = PACKAGE_2_APPROVED_IDS.has(id) || PACKAGE_3_APPROVED_IDS.has(id) || PACKAGE_4_APPROVED_IDS.has(id);
     const isRemoved = removedByTemplateRule || PACKAGE_2_REMOVED_IDS.has(id);
-    const reviewer = PACKAGE_3_APPROVED_IDS.has(id) ? PACKAGE_3_REVIEWER : PACKAGE_2_REVIEWER;
-    const reviewedAt = PACKAGE_3_APPROVED_IDS.has(id) ? PACKAGE_3_REVIEWED_AT : PACKAGE_2_REVIEWED_AT;
+    const reviewer = PACKAGE_4_APPROVED_IDS.has(id)
+      ? PACKAGE_4_REVIEWER
+      : PACKAGE_3_APPROVED_IDS.has(id) ? PACKAGE_3_REVIEWER : PACKAGE_2_REVIEWER;
+    const reviewedAt = PACKAGE_4_APPROVED_IDS.has(id)
+      ? PACKAGE_4_REVIEWED_AT
+      : PACKAGE_3_APPROVED_IDS.has(id) ? PACKAGE_3_REVIEWED_AT : PACKAGE_2_REVIEWED_AT;
     return {
       id,
       version: CASE_EXAMPLE_VERSION,
@@ -326,7 +391,7 @@ const SUPPLEMENTAL_CASE_EXAMPLES = PILOT.flatMap(([noun, en, semanticType]) => {
       reviewNotes: isRemoved
         ? "Removed by editorial review; do not publish or resend."
         : isApproved
-          ? `Approved by editorial review in Fälle-Prüfung package ${PACKAGE_3_APPROVED_IDS.has(id) ? "3" : "2"}.`
+          ? `Approved by editorial review in Fälle-Prüfung package ${PACKAGE_4_APPROVED_IDS.has(id) ? "4" : PACKAGE_3_APPROVED_IDS.has(id) ? "3" : "2"}.`
           : isNounSpecific
             ? "Noun-specific candidate; editorial review pending."
             : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
@@ -352,6 +417,87 @@ const GENERATED_FRAMES = {
     { key: "generated-02", before: "Wir untersuchen ", after: ".", translation: (gloss) => `We are examining the ${gloss}.`, trigger: "direct object" },
   ],
 };
+
+// Final editorial approvals from Fälle-Prüfung package 5. Keeping the full
+// sentence here makes the email review artifact easy to audit; the stable
+// generated card key is preserved when the sentence is split around its form.
+const PACKAGE_5_SENTENCES = new Map([
+  ["Geschichte::nominative::generated-02", ["Die Geschichte spielt im Berlin der 1920er Jahre.", "The story is set in 1920s Berlin."]],
+  ["Geschichte::accusative::generated-01", ["Die Großmutter erzählt die Geschichte.", "The grandmother tells the story."]],
+  ["Geschichte::accusative::generated-02", ["Die Kinder hören die Geschichte gespannt.", "The children listen to the story attentively."]],
+  ["Morgen::nominative::generated-02", ["Der Morgen beginnt mit Sonnenschein.", "The morning begins with sunshine."]],
+  ["Morgen::accusative::generated-01", ["Wir genießen den Morgen im Garten.", "We enjoy the morning in the garden."]],
+  ["Morgen::accusative::generated-02", ["Sie verschläft den Morgen.", "She sleeps through the morning."]],
+  ["Haus::nominative::generated-02", ["Das Haus steht am Ende der Straße.", "The house stands at the end of the street."]],
+  ["Haus::accusative::generated-01", ["Die Familie kauft das Haus.", "The family buys the house."]],
+  ["Familie::nominative::generated-02", ["Die Familie wohnt in Köln.", "The family lives in Cologne."]],
+  ["Familie::accusative::generated-01", ["Wir besuchen die Familie am Wochenende.", "We visit the family on the weekend."]],
+  ["Familie::accusative::generated-02", ["Der Fotograf porträtiert die Familie.", "The photographer portrays the family."]],
+  ["Bild::nominative::generated-02", ["Das Bild hängt über dem Sofa.", "The picture hangs above the sofa."]],
+  ["Bild::accusative::generated-01", ["Sie malt das Bild für ihre Mutter.", "She paints the picture for her mother."]],
+  ["Woche::nominative::generated-02", ["Die Woche beginnt mit einer Besprechung.", "The week begins with a meeting."]],
+  ["Woche::accusative::generated-01", ["Wir planen die Woche gemeinsam.", "We plan the week together."]],
+  ["Woche::accusative::generated-02", ["Wir verbringen die Woche an der Küste.", "We spend the week on the coast."]],
+  ["Unternehmen::nominative::generated-02", ["Das Unternehmen entwickelt neue Software.", "The company develops new software."]],
+  ["Unternehmen::accusative::generated-01", ["Die Bank finanziert das Unternehmen.", "The bank finances the company."]],
+  ["Unternehmen::accusative::generated-02", ["Der Konzern übernimmt das Unternehmen.", "The corporation takes over the company."]],
+  ["Grund::nominative::generated-02", ["Der Grund bleibt unklar.", "The reason remains unclear."]],
+  ["Grund::accusative::generated-01", ["Bitte nennen Sie den Grund für die Verspätung.", "Please state the reason for the delay."]],
+  ["Grund::accusative::generated-02", ["Niemand kennt den Grund für seine Entscheidung.", "No one knows the reason for his decision."]],
+  ["Problem::nominative::generated-02", ["Das Problem betrifft viele Familien.", "The problem affects many families."]],
+  ["Problem::accusative::generated-01", ["Wir lösen das Problem gemeinsam.", "We solve the problem together."]],
+  ["Problem::accusative::generated-02", ["Die Techniker prüfen das Problem.", "The technicians examine the problem."]],
+  ["Nacht::nominative::generated-02", ["Die Nacht war ungewöhnlich kalt.", "The night was unusually cold."]],
+  ["Nacht::accusative::generated-01", ["Wir verbringen die Nacht im Hotel.", "We spend the night in the hotel."]],
+  ["Nacht::accusative::generated-02", ["Sie arbeitet die Nacht durch.", "She works through the night."]],
+  ["Thema::nominative::generated-01", ["Das Thema interessiert viele Schüler.", "The topic interests many students."]],
+  ["Thema::nominative::generated-02", ["Das Thema kommt später zur Sprache.", "The topic comes up later."]],
+  ["Thema::dative::generated-01", ["Bei dem Thema gehen die Meinungen auseinander.", "Opinions differ on the topic."]],
+  ["Thema::dative::generated-02", ["Wir widmen uns dem Thema im nächsten Kapitel.", "We devote ourselves to the topic in the next chapter."]],
+  ["Thema::accusative::generated-01", ["Die Lehrerin erklärt das Thema.", "The teacher explains the topic."]],
+  ["Thema::accusative::generated-02", ["Wir diskutieren das Thema ausführlich.", "We discuss the topic in detail."]],
+  ["Beispiel::nominative::generated-01", ["Das Beispiel zeigt den Unterschied deutlich.", "The example clearly shows the difference."]],
+  ["Beispiel::nominative::generated-02", ["Das Beispiel stammt aus dem Alltag.", "The example comes from everyday life."]],
+  ["Beispiel::dative::generated-01", ["An dem Beispiel erkennt man die Regel.", "The rule can be seen in the example."]],
+  ["Beispiel::dative::generated-02", ["Die Lehrerin erklärt die Regel mit dem Beispiel.", "The teacher explains the rule using the example."]],
+  ["Beispiel::accusative::generated-01", ["Bitte lesen Sie das Beispiel laut vor.", "Please read the example aloud."]],
+  ["Schule::nominative::generated-01", ["Die Schule liegt neben dem Park.", "The school is located next to the park."]],
+  ["Schule::nominative::generated-02", ["Die Schule öffnet um acht Uhr.", "The school opens at eight o'clock."]],
+  ["Schule::dative::generated-01", ["Vor der Schule wartet der Bus.", "The bus waits in front of the school."]],
+  ["Schule::dative::generated-02", ["Die Stadt hilft der Schule bei der Renovierung.", "The city helps the school with the renovation."]],
+  ["Schule::accusative::generated-01", ["Die Kinder verlassen die Schule um drei Uhr.", "The children leave the school at three o'clock."]],
+  ["Schule::accusative::generated-02", ["Die Gemeinde renoviert die Schule.", "The municipality renovates the school."]],
+  ["Dank::nominative::generated-01", ["Der Dank gilt allen Helfern.", "The thanks go to all the helpers."]],
+  ["Dank::nominative::generated-02", ["Der Dank kam von Herzen.", "The thanks were heartfelt."]],
+  ["Dank::accusative::generated-01", ["Die Helfer verdienen den Dank der ganzen Stadt.", "The helpers deserve the thanks of the entire city."]],
+  ["Dank::accusative::generated-02", ["Die Vorsitzende spricht den Dank der Gruppe aus.", "The chairwoman expresses the group's thanks."]],
+  ["Abend::nominative::generated-01", ["Der Abend endet mit einem Konzert.", "The evening ends with a concert."]],
+  ["Abend::nominative::generated-02", ["Der Abend war ruhig und warm.", "The evening was quiet and warm."]],
+  ["Abend::dative::generated-01", ["An dem Abend fiel der erste Schnee.", "The first snow fell that evening."]],
+  ["Abend::dative::generated-02", ["Seit dem Abend fehlt jede Spur von ihm.", "There has been no trace of him since that evening."]],
+  ["Abend::accusative::generated-01", ["Wir verbringen den Abend am See.", "We spend the evening by the lake."]],
+  ["Musik::nominative::generated-01", ["Die Musik klingt sehr leise.", "The music sounds very quiet."]],
+  ["Musik::nominative::generated-02", ["Die Musik begleitet die Szene.", "The music accompanies the scene."]],
+  ["Musik::dative::generated-01", ["Bei der Musik kann ich gut arbeiten.", "I can work well with this music playing."]],
+  ["Musik::dative::generated-02", ["Wir tanzen zu der Musik.", "We dance to the music."]],
+  ["Musik::accusative::generated-01", ["Sie hört die Musik aus dem Nachbarzimmer.", "She hears the music from the next room."]],
+  ["Musik::accusative::generated-02", ["Der Film verwendet die Musik sehr sparsam.", "The film uses the music very sparingly."]],
+]);
+
+function package5Record(key, target) {
+  const approved = PACKAGE_5_SENTENCES.get(key);
+  if (!approved) return null;
+  const [sentence, translation] = approved;
+  const targetIndex = sentence.toLocaleLowerCase("de").indexOf(target.toLocaleLowerCase("de"));
+  if (targetIndex < 0) throw new Error(`Package 5 sentence does not contain target: ${key}`);
+  return {
+    before: sentence.slice(0, targetIndex),
+    after: sentence.slice(targetIndex + target.length),
+    displayTarget: sentence.slice(targetIndex, targetIndex + target.length),
+    translation,
+    trigger: key.includes("::dative::") ? "dative usage" : key.includes("::accusative::") ? "direct object" : "subject",
+  };
+}
 
 // Hand-authored replacements for generated frames that are grammatically
 // valid but semantically unnatural with a particular noun. Keys include the
@@ -489,11 +635,13 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
     const gloss = word.en.split(" / ")[0].replace(/ \([^)]*\)$/, "");
     return GENERATED_FRAMES[grammaticalCase].map((frame) => {
       const overrideKey = `${word.noun}::${grammaticalCase}::${frame.key}`;
-      const isNounSpecific = Object.hasOwn(GENERATED_EXAMPLE_OVERRIDES, overrideKey);
-      const authored = GENERATED_EXAMPLE_OVERRIDES[overrideKey] || frame;
       const target = word[grammaticalCase];
+      const package5 = package5Record(overrideKey, target);
+      const isPackage5Approved = Boolean(package5);
+      const isNounSpecific = isPackage5Approved || Object.hasOwn(GENERATED_EXAMPLE_OVERRIDES, overrideKey);
+      const authored = package5 || GENERATED_EXAMPLE_OVERRIDES[overrideKey] || frame;
       const id = `${seedCardId(word)}-${shortCase}-${frame.key}`;
-      const isApproved = PACKAGE_3_APPROVED_IDS.has(id);
+      const isApproved = isPackage5Approved || PACKAGE_3_APPROVED_IDS.has(id) || PACKAGE_4_APPROVED_IDS.has(id);
       return {
         id,
         version: CASE_EXAMPLE_VERSION,
@@ -507,16 +655,17 @@ const GENERATED_CASE_EXAMPLES = loadSeed()
         before: authored.before,
         target,
         after: authored.after,
-        sentence: `${authored.before}${target}${authored.after}`,
+        displayTarget: authored.displayTarget || target,
+        sentence: `${authored.before}${authored.displayTarget || target}${authored.after}`,
         translation: typeof authored.translation === "function" ? authored.translation(gloss) : authored.translation,
         trigger: authored.trigger,
         cefr: word.cefr,
         frequencyRank: word.frequencyRank,
         status: isApproved ? "verified" : "candidate",
-        reviewer: isApproved ? PACKAGE_3_REVIEWER : null,
-        reviewedAt: isApproved ? PACKAGE_3_REVIEWED_AT : null,
+        reviewer: isApproved ? (isPackage5Approved ? PACKAGE_5_REVIEWER : PACKAGE_4_APPROVED_IDS.has(id) ? PACKAGE_4_REVIEWER : PACKAGE_3_REVIEWER) : null,
+        reviewedAt: isApproved ? (isPackage5Approved ? PACKAGE_5_REVIEWED_AT : PACKAGE_4_APPROVED_IDS.has(id) ? PACKAGE_4_REVIEWED_AT : PACKAGE_3_REVIEWED_AT) : null,
         reviewNotes: isApproved
-          ? "Approved by editorial review in Fälle-Prüfung package 3."
+          ? `Approved by editorial review in Fälle-Prüfung package ${isPackage5Approved ? "5" : PACKAGE_4_APPROVED_IDS.has(id) ? "4" : "3"}.`
           : isNounSpecific
             ? "Noun-specific candidate; editorial review pending."
             : "Shared boilerplate frame; noun-specific rewrite required before editorial review.",
@@ -611,10 +760,10 @@ export function validateCaseExamples(
     if (PRACTICED_CASES.some((caseName) => example.forms?.[caseName] !== word[caseName])) {
       errors.push(`${label}: declension options do not match deck morphology`);
     }
-    if (example.sentence !== `${example.before}${example.target}${example.after}`) {
+    if (example.sentence !== `${example.before}${example.displayTarget || example.target}${example.after}`) {
       errors.push(`${label}: sentence does not match its segments`);
     }
-    if (!example.before || !example.after || !example.translation || !example.trigger) {
+    if (typeof example.before !== "string" || typeof example.after !== "string" || !example.translation || !example.trigger) {
       errors.push(`${label}: incomplete learning metadata`);
     }
     if (!/[.!?]$/.test(example.sentence) || !/[.!?]$/.test(example.translation)) {
